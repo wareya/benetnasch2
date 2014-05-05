@@ -1,0 +1,4 @@
+- Drawing systems will be registered into a secondary systems list
+- This systems list will be run directly before the framelimiter, always
+- The drawing system list's namespace will expose API functions that do things like blotting a given character or sprite to the screen surface
+- The last system of the drawing systems list will be a system that blots the screen surface to the window

@@ -1,0 +1,25 @@
+Copyright 2013-2014 - Alexander 'Wareya' Nadeau <wareya@gmail.com>
+
+This software is provided 'as-is', without any express or implied warranty. In
+no event will the authors be held liable for any damages arising from the use
+of this software.
+
+Permission is granted to anyone to use this software and/or its source code for
+any purpose, including commercial applications, and to alter it and distribute
+it freely, subject to the following conditions:
+
+    1. The origin of the software must not be misrepresented.
+
+    2. Modified versions of the software or its source code must not
+    be misrepresented as being the original software or source code.
+
+    3. This notice may not be removed from, or altered in, any source
+    distribution of the software.
+
+        3a. This notice is not required to be included in any compiled
+        distribution of the software, unless said distribution also
+        constitutes a source distribution.
+        
+    4. In case of use or inclusion of this software in a commercial
+    product, a proper acknowledgment of this software inside the final
+    product is required.
