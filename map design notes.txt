@@ -1,0 +1,12 @@
+GG2 map theory is all about how different routes intersect and how you can or can't cut people off in particular locations or connections. GG2's one of the few games out there where the main gamemode is CTF, so it's not gonna work that much like any of the other games out there. It's unreasonbly weird in a lot of small ways.
+
+Connections between several routes in a single area is really hard to pull off -- you need vertical space to make routes especially distinct, and you can only cram so many entrances in so many directions into a small area. For this reason, it's very common to have crossroads where it's actually a pair of forks with connected prongs.
+
+Art is essentially distinct from collision. They're both arbitrary bitmaps, where collision (wallmask) is its own, separate, 1-bit one, and the art (background) is a PNG. The art has to show off what pixels are or aren't solid, and it should be easy to notice.
+
+Sightlines are a thing, but it's only annoying when you have huge open areas with one entrance, so that's all you have to go out of your way to avoid.
+
+Long flat areas, especially ones with low ceilings, make it hard to avoid spam, because you can't hide behind cover and need to actively avoid every shot that comes at you. At the very least, almost ever weapon is a projectile, so you don't have to worry about having cover for every situation -- direct combat takes care of itself, cover just makes it more interesting (and sometimes annoying).
+
+Avoid having key areas with only one entrance or exit, or only dangerous ones. You can get away with it in some games, but just like TF2, it never works here.
+

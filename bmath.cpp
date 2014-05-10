@@ -1,3 +1,5 @@
+#ifndef BENETNASCH_MATH_HEADER
+#define BENETNASCH_MATH_HEADER
 
 #define maximum( a, b ) ((a > b) ? a : b)
 #define minimum( a, b ) ((a < b) ? a : b)
@@ -122,3 +124,4 @@ double vector_direction( double x1, double y1 )
 {
     return rad2deg(atan2( -y1 ,  x1 ));
 }
+#endif

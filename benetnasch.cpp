@@ -2,6 +2,7 @@
 #include <iomanip>
 #include <algorithm>
 #include <chrono>
+#include <functional>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -10,7 +11,7 @@
 #include "btime.cpp"
 #include "sdlhelpers.cpp"
 
-typedef unsigned long i_entityid;
+typedef unsigned long entityid_t;
 
 namespace Sys
 {
@@ -21,6 +22,123 @@ namespace Sys
     bool quit = false;
     
     std::vector<bool(*)()> tems; // Sys::tems
+    
+    struct Component
+    {
+        Component(entityid_t myEntity);
+        virtual ~Component();
+        
+        entityid_t entityID;
+    };
+
+    Component::Component(entityid_t myEntity) : entityID(myEntity)
+    { }
+    Component::~Component()
+    { }
+    
+    // define collection and interfaces for components of some arbitrary type
+    template<typename CType>
+    struct Collection
+    {
+        std::vector<CType*> List;
+        
+        // Returns a pointer to the component which refers to a given entity
+        //  or else 0 (if there is no such instance)
+        CType * Refers(entityid_t myEntity)
+        {
+            unsigned i;
+            for(i = 0;
+                i < List.size()
+                && List.at(i)->entityID != myEntity;
+                ++i);
+            
+            return (i != List.size())?List[i]:0;
+        }
+        // Makes sure that there is some instance of this kind of component that
+        // belongs to the given entity
+        CType * EnforceDependency(entityid_t myEntity)
+        {
+            CType * relevant = Refers(myEntity);
+            if(!relevant)
+            {
+                relevant = new CType(myEntity);
+            }
+            return relevant;
+        }
+        void With(std::function<void(CType*)> lambda)
+        {
+            for(unsigned long i = 0; i != List.size(); ++i)
+            {
+                lambda(List[i]);
+            }
+        }
+    };
+    
+    // Position component
+    struct Position : public Component
+    {
+        Position(entityid_t myEntity);
+        double x, y;
+    };
+    // collection of positions
+    Collection<Position> Positions;
+    // Constructor will add this new instance to its list
+    Position::Position(entityid_t myEntity) : Component(myEntity), x(0), y(0)
+    {
+        Positions.List.push_back(this);
+    }
+    
+    // Hull component
+    struct Hull : public Component
+    {
+        Hull(entityid_t myEntity);
+        double h, w;
+    };
+    Collection<Hull> Hulls;
+    Hull::Hull(entityid_t myEntity) : Component(myEntity), h(0), w(0)
+    {
+        Hulls.List.push_back(this);
+    }
+    
+    // Sprite component
+    struct TexturedDrawable : public Component
+    {
+        TexturedDrawable(entityid_t myEntity);
+        Position * position;
+        SDL_Texture * sprite;
+        double xoffset, yoffset;
+        bool init(const char * sarg);
+    };
+    Collection<TexturedDrawable> TexturedDrawables;
+    TexturedDrawable::TexturedDrawable(entityid_t myEntity) : Component(myEntity), sprite(NULL), xoffset(0), yoffset(0)
+    {
+        position = Positions.EnforceDependency(myEntity);
+        TexturedDrawables.List.push_back(this);
+    }
+    bool TexturedDrawable::init(const char * sarg)
+    {
+        sprite = loadTexture( sarg, Sys::Renderer );
+        return sprite != nullptr;
+    }
+    
+    // Character component
+    struct Character : public Component
+    {
+        Character(entityid_t myEntity);
+        Position * position;
+        Hull * hull;
+        TexturedDrawable * sprite;
+        double hspeed, vspeed;
+    };
+    Collection<Character> Characters;
+    Character::Character(entityid_t myEntity) : Component(myEntity), hspeed(0), vspeed(0)
+    {
+        hull = Hulls.EnforceDependency(myEntity);
+        position = Positions.EnforceDependency(myEntity);
+        sprite = TexturedDrawables.EnforceDependency(myEntity);
+        sprite->init("sprites/mychar.png");
+        Characters.List.push_back(this);
+    }
     
     bool FrameLimit()
     {
@@ -65,7 +183,7 @@ namespace Sys
         Time::delta = Time::delta_us * Time::scale;
         Time::simstart_us = halttime;
         Time::frames.push_back( Time::simstart_us );
-
+        
         // Throw away old timings
         while ( Time::frames.size() > 125 )
             Time::frames.erase( Time::frames.begin() );
@@ -81,7 +199,6 @@ namespace Sys
                       //<< " miss "   << std::setprecision(0) << Time::deviance * 1000
                       << " dev "    << Time::deviance << "\n";
         }
-        
         return false;
     }
     bool SDLEvents()
@@ -103,12 +220,26 @@ namespace Sys
         
         return false;
     }
+    namespace Renderers
+    {
+        bool TexturedDrawables()
+        {
+            Sys::TexturedDrawables.With([](TexturedDrawable * component)
+            {
+                renderTexture( component->sprite, Sys::Renderer, component->position->x, component->position->y );
+            });
+            return false;
+        }
+    }
     bool RenderThings()
     {
         // Clear screen
-        // Cheap clear: use SDL_RenderClear() instead of SDL_RenderFillRect() if there are problems
+        // Cheap clear; use SDL_RenderClear() instead of SDL_RenderFillRect() if there are problems
         SDL_SetRenderDrawColor( Renderer, 0, 0, 0, 255);
         SDL_RenderFillRect( Renderer, &shape );
+        
+        Renderers::TexturedDrawables();
+        
         return false;
     }
     bool PresentScreen()
@@ -116,6 +247,19 @@ namespace Sys
         SDL_RenderPresent(Renderer);
         return false;
     }
+}
+
+bool sys_init()
+{
+    new Sys::Character(0);
+    
+    Sys::tems.push_back(&Sys::FrameLimit);
+    Sys::tems.push_back(&Sys::SDLEvents);
+    Sys::tems.push_back(&Sys::Physics);
+    Sys::tems.push_back(&Sys::RenderThings);
+    Sys::tems.push_back(&Sys::PresentScreen);
+    
+    return 1;
 }
 
 bool main_init()
@@ -135,11 +279,7 @@ bool main_init()
     
     srand(time(NULL));
     
-    Sys::tems.push_back(&Sys::FrameLimit);
-    Sys::tems.push_back(&Sys::SDLEvents);
-    Sys::tems.push_back(&Sys::Physics);
-    Sys::tems.push_back(&Sys::RenderThings);
-    Sys::tems.push_back(&Sys::PresentScreen);
+    Sys::tems.push_back(&sys_init);
     
     SDL_PumpEvents();
     return 0;
