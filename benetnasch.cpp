@@ -215,9 +215,29 @@ namespace Sys
         }
         return false;
     }
+    namespace Physicsers
+    {
+        bool MoveCharacters()
+        {
+            Sys::Characters.With([](Character * component)
+            {
+                double &x = component->position->x;
+                double &y = component->position->y;
+                if (y == 0 and x < 800-32)
+                    x += 1;
+                else if (x == 800-32 and y < 600-48)
+                    y += 1;
+                else if (x > 0)
+                    x -= 1;
+                else
+                    y -= 1;
+            });
+            return false;
+        }
+    }
     bool Physics()
     {
-        
+        Physicsers::MoveCharacters();
         return false;
     }
     namespace Renderers
