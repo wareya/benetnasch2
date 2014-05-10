@@ -1,7 +1,7 @@
 #!/bin/bash
 
 source='benetnasch.cpp'
-cflags='-g -std=c++11 -ggdb -Wall -pedantic -mconsole -I/c/mingw/include/ -L/c/mingw/lib/'
+cflags='-g -std=c++11 -ggdb -Wall -pedantic -mconsole -I/c/mingw/include/ -Iinclude -L/c/mingw/lib/'
 linker='-lmingw32 -lSDL2main -lSDL2_image -lSDL2'
 
 cmd="g++ $source $cflags $linker"
