@@ -69,6 +69,17 @@ namespace Ent
             }
         }
     }
+    // free a given ID -- returns false if id doesn't exist
+    bool Free(entityid_t id) //perf: 3xlogn
+    {
+        if(Used.find(id))
+            return false;
+        Freed.insert(id);
+        Used.remove(id);
+        if(id < LowestUnused)
+            LowestUnused = id;
+        return true;
+    }
     bool Exists(entityid_t id)
     {
         return Used.find(id);
@@ -77,6 +88,12 @@ namespace Ent
 
 namespace Input
 {
+    enum {
+        JUMP,
+        LEFT,
+        RIGHT,
+        DOWN
+    };
     bool inputs[256] = { }; 
     bool last_inputs[256] = { }; 
     signed char scrolls[4];
@@ -85,20 +102,23 @@ namespace Input
     struct keybinding
     {
         SDL_Scancode key;
-        unsigned char input_element;
+        unsigned char input_index;
     };
     std::vector<keybinding> keybindings;
     struct mousebinding
     {
         SDL_Scancode button;
-        unsigned char input_element;
+        unsigned char input_index;
     };
     std::vector<mousebinding> mousebindings;
     
     void Init()
     {
         corestate = SDL_GetKeyboardState(NULL);
-        keybindings.push_back({SDL_SCANCODE_E, 0});
+        keybindings.push_back({SDL_SCANCODE_E, JUMP});
+        keybindings.push_back({SDL_SCANCODE_W, LEFT});
+        keybindings.push_back({SDL_SCANCODE_D, DOWN});
+        keybindings.push_back({SDL_SCANCODE_F, RIGHT});
     }
     
     void Update()
@@ -111,12 +131,12 @@ namespace Input
         for (auto bind : keybindings)
         {
             if(corestate[bind.key])
-                inputs[bind.input_element] = true;
+                inputs[bind.input_index] = true;
         }
         for (auto bind : mousebindings)
         {
             if(corestate[bind.button])
-                inputs[bind.input_element] = true;
+                inputs[bind.input_index] = true;
         }
     }
 }
@@ -311,6 +331,7 @@ namespace Sys
     }
     bool SDLEvents()
     {
+        SDL_PumpEvents();
         SDL_Event event;
         while ( SDL_PollEvent( &event ) )
         {
@@ -321,7 +342,6 @@ namespace Sys
                 break;
             }   
         }
-        SDL_PumpEvents();
         Input::Update();
         return false;
     }
@@ -333,8 +353,14 @@ namespace Sys
             {
                 double &x = component->position->x;
                 double &y = component->position->y;
-                if(Input::inputs[0])
+                if(Input::inputs[Input::RIGHT])
                     x += 1;
+                if(Input::inputs[Input::LEFT])
+                    x -= 1;
+                if(Input::inputs[Input::DOWN])
+                    y += 1;
+                if(Input::inputs[Input::JUMP])
+                    y -= 1;
             });
             return false;
         }
@@ -362,6 +388,7 @@ namespace Sys
         SDL_SetRenderDrawColor( Renderer, 0, 0, 0, 255);
         SDL_RenderFillRect( Renderer, &shape );
         
+        // Draw simple textured drawables
         Renderers::TexturedDrawables();
         
         return false;
