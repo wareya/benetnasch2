@@ -75,6 +75,52 @@ namespace Ent
     }
 }
 
+namespace Input
+{
+    bool inputs[256] = { }; 
+    bool last_inputs[256] = { }; 
+    signed char scrolls[4];
+    const Uint8 * corestate;
+    
+    struct keybinding
+    {
+        SDL_Scancode key;
+        unsigned char input_element;
+    };
+    std::vector<keybinding> keybindings;
+    struct mousebinding
+    {
+        SDL_Scancode button;
+        unsigned char input_element;
+    };
+    std::vector<mousebinding> mousebindings;
+    
+    void Init()
+    {
+        corestate = SDL_GetKeyboardState(NULL);
+        keybindings.push_back({SDL_SCANCODE_E, 0});
+    }
+    
+    void Update()
+    {
+        for (short i = 0; i < 256; i++)
+        {
+            last_inputs[i] = inputs[i];
+            inputs[i] = 0;
+        }
+        for (auto bind : keybindings)
+        {
+            if(corestate[bind.key])
+                inputs[bind.input_element] = true;
+        }
+        for (auto bind : mousebindings)
+        {
+            if(corestate[bind.button])
+                inputs[bind.input_element] = true;
+        }
+    }
+}
+
 namespace Sys
 {
     SDL_Window * MainWindow;
@@ -273,10 +319,10 @@ namespace Sys
             case SDL_QUIT:
                 quit = true;
                 break;
-            default:
-                break;
             }   
         }
+        SDL_PumpEvents();
+        Input::Update();
         return false;
     }
     namespace Physicsers
@@ -287,14 +333,8 @@ namespace Sys
             {
                 double &x = component->position->x;
                 double &y = component->position->y;
-                if (y == 0 and x < 800-32)
+                if(Input::inputs[0])
                     x += 1;
-                else if (x == 800-32 and y < 600-48)
-                    y += 1;
-                else if (x > 0)
-                    x -= 1;
-                else
-                    y -= 1;
             });
             return false;
         }
@@ -339,8 +379,8 @@ bool sys_init()
     
     Sys::tems.push_back(&Sys::FrameLimit);
     Sys::tems.push_back(&Sys::SDLEvents);
-    //Sys::tems.push_back(&Sys::Physics);
-    //Sys::tems.push_back(&Sys::RenderThings);
+    Sys::tems.push_back(&Sys::Physics);
+    Sys::tems.push_back(&Sys::RenderThings);
     Sys::tems.push_back(&Sys::PresentScreen);
     
     return 1;
@@ -348,7 +388,6 @@ bool sys_init()
 
 bool main_init()
 {
-
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
         std::cout << "Could not initialize SDL: " << SDL_GetError() << std::endl;
 
@@ -363,9 +402,11 @@ bool main_init()
     
     srand(time(NULL));
     
+    SDL_PumpEvents();
+    Input::Init();
+    
     Sys::tems.push_back(&sys_init);
     
-    SDL_PumpEvents();
     return 0;
 }
 
