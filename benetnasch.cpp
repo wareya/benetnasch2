@@ -193,12 +193,14 @@ namespace Sys
             }
             return relevant;
         }
-        void With(std::function<void(CType*)> lambda)
+        
+        typename std::vector<CType*>::iterator begin()
         {
-            for(unsigned long i = 0; i != List.size(); ++i)
-            {
-                lambda(List[i]);
-            }
+            return List.begin();
+        }
+        typename std::vector<CType*>::iterator end()
+        {
+            return List.end();
         }
     };
     
@@ -262,6 +264,8 @@ namespace Sys
     Character::Character(entityid_t myEntity) : Component(myEntity), hspeed(0), vspeed(0)
     {
         hull = Hulls.EnforceDependency(myEntity);
+        hull->h = 48;
+        hull->w = 32;
         position = Positions.EnforceDependency(myEntity);
         sprite = TexturedDrawables.EnforceDependency(myEntity);
         sprite->init("sprites/mychar.png");
@@ -349,10 +353,10 @@ namespace Sys
     {
         bool MoveCharacters()
         {
-            Sys::Characters.With([](Character * component)
+            for(auto character : Sys::Characters)
             {
-                double &x = component->position->x;
-                double &y = component->position->y;
+                double &x = character->position->x;
+                double &y = character->position->y;
                 if(Input::inputs[Input::RIGHT])
                     x += 1;
                 if(Input::inputs[Input::LEFT])
@@ -361,7 +365,7 @@ namespace Sys
                     y += 1;
                 if(Input::inputs[Input::JUMP])
                     y -= 1;
-            });
+            };
             return false;
         }
     }
@@ -374,10 +378,10 @@ namespace Sys
     {
         bool TexturedDrawables()
         {
-            Sys::TexturedDrawables.With([](TexturedDrawable * component)
+            for(auto drawable : Sys::TexturedDrawables)
             {
-                renderTexture( component->sprite, Sys::Renderer, component->position->x, component->position->y );
-            });
+                renderTexture( drawable->sprite, Sys::Renderer, drawable->position->x, drawable->position->y );
+            };
             return false;
         }
     }
