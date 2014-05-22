@@ -1,3 +1,5 @@
+// This file is ISC licensed
+
 #ifndef BENETNASCH_MATH_HEADER
 #define BENETNASCH_MATH_HEADER
 

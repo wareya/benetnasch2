@@ -3,6 +3,7 @@
 #include <algorithm>
 #include <chrono>
 #include <functional>
+#include <cmath>
 
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
@@ -36,11 +37,11 @@ namespace Ent
             
             // We need to figure out what the next lowest unused will be
             // There aren't any freed ones to use, so we have to do it hard
-            if (LowestUnused > *Used.end()) // lowest unused is outside of used range, free to increment LowestUnused
+            if (LowestUnused >= *Used.end()) // lowest unused is outside of used range, free to increment LowestUnused
                 LowestUnused++;
             else // This shouldn't ever happen; no freed IDs, lowest unused being inside Used's bounds -- implies earlier error setting LowestUnused
             {
-                std::cout << "Error: Unknown cause with LowestUnused being invalid!";
+                std::cout << "Error: Unknown cause with LowestUnused being invalid 1!";
                 return -1;
             }
             return id;
@@ -58,11 +59,11 @@ namespace Ent
             }
             else // We just exhausted the last previously freed ID
             {
-                if (LowestUnused > *Used.end()) // lowest unused is outside of used range, free to increment LowestUnused
+                if (LowestUnused >= *Used.end()) // lowest unused is outside of used range, free to increment LowestUnused
                     LowestUnused++;
                 else // This shouldn't ever happen; no freed IDs, lowest unused being inside Used's bounds -- implies earlier error setting LowestUnused
                 {
-                    std::cout << "Error: Unknown cause with LowestUnused being invalid!";
+                    std::cout << "Error: Unknown cause with LowestUnused being invalid 2!";
                     return -1;
                 }
                 return id;
@@ -272,12 +273,43 @@ namespace Sys
         Characters.List.push_back(this);
     }
     
+    struct BoxDrawable : public Component
+    {
+        BoxDrawable(entityid_t myEntity);
+        
+        Position * position;
+        Hull * hull;
+        double xoffset, yoffset;
+        
+        SDL_Rect* getShape();
+        
+        private:
+            SDL_Rect shape;
+    };
+    Collection<BoxDrawable> BoxDrawables;
+    BoxDrawable::BoxDrawable(entityid_t myEntity) : Component(myEntity)
+    {
+        position = Positions.EnforceDependency(myEntity);
+        hull = Hulls.EnforceDependency(myEntity);
+        xoffset = 0;
+        yoffset = 0;
+        BoxDrawables.List.push_back(this);
+    }
+    SDL_Rect * BoxDrawable::getShape()
+    {
+        shape = {int(ceil(position->x+xoffset)),
+                 int(ceil(position->y+yoffset)),
+                 int(round(hull->w)),
+                 int(round(hull->h))};
+        return &shape;
+    }
+    
     bool FrameLimit()
     {
         // Frame limit
         double TimeWaitS;
         double TimeSpent;
-        double prehalttime = Time::get_us(); // naively prevent error in non-critical debug code
+        double prehalttime = Time::get_us(); // naively avoid error in non-critical debug code
         double halttime;
         
         if( Time::dostart )
@@ -320,7 +352,7 @@ namespace Sys
         while ( Time::frames.size() > Time::Framesnum )
             Time::frames.erase( Time::frames.begin() );
         
-        if(true) // debug
+        if(false) // debug
         {
             std::cout << std::fixed << std::setprecision(4)
                       <<"\rfps "    << Time::scale / ((Time::frames.back() - Time::frames.front())/(Time::frames.size()-1))
@@ -357,14 +389,30 @@ namespace Sys
             {
                 double &x = character->position->x;
                 double &y = character->position->y;
+                double &hspeed = character->hspeed;
+                double &vspeed = character->vspeed;
+                float delta = 1.0/Time::Framerate;
+                
                 if(Input::inputs[Input::RIGHT])
-                    x += 1;
+                    hspeed += 2000*delta;
                 if(Input::inputs[Input::LEFT])
-                    x -= 1;
-                if(Input::inputs[Input::DOWN])
-                    y += 1;
-                if(Input::inputs[Input::JUMP])
-                    y -= 1;
+                    hspeed -= 2000*delta;
+                
+                hspeed *= pow(0.01, delta);
+                if (Input::inputs[Input::RIGHT] == Input::inputs[Input::LEFT])
+                {
+                    auto hsign = (0 < hspeed) - (hspeed < 0);
+                    hspeed = absolute(hspeed) - 500*delta;
+                    hspeed = hspeed > 0 ? hspeed : 0;
+                    hspeed *= hsign;
+                }
+                
+                x += hspeed*delta;
+                if(true) // debug
+                {
+                    std::cout << std::fixed << std::setprecision(4)
+                              <<"\nx, h, d " << x << " " << hspeed << " " << delta;
+                }
             };
             return false;
         }
@@ -384,6 +432,15 @@ namespace Sys
             };
             return false;
         }
+        bool BoxDrawables()
+        {
+            for(auto drawable : Sys::BoxDrawables)
+            {
+                SDL_SetRenderDrawColor( Sys::Renderer, 255, 255, 255, 255 );
+                SDL_RenderFillRect( Sys::Renderer, drawable->getShape() );
+            };
+            return false;
+        }
     }
     bool RenderThings()
     {
@@ -394,6 +451,7 @@ namespace Sys
         
         // Draw simple textured drawables
         Renderers::TexturedDrawables();
+        Renderers::BoxDrawables();
         
         return false;
     }
@@ -407,6 +465,13 @@ namespace Sys
 bool sys_init()
 {
     new Sys::Character(Ent::New());
+    new Sys::BoxDrawable(Ent::New());
+    auto d = Sys::BoxDrawables.List[0];
+    
+    d->position->x = 50;
+    d->position->y = 120;
+    d->hull->h = 50;
+    d->hull->w = 400;
     
     Sys::tems.push_back(&Sys::FrameLimit);
     Sys::tems.push_back(&Sys::SDLEvents);
