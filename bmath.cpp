@@ -9,6 +9,22 @@
 #define rad2deg( a ) (a*180/PI)
 #define deg2rad( a ) (a*PI/180)
 
+template <typename CType>
+CType lerp(CType a, CType b, CType t) // a to b, t from 0-1
+{
+    return b*t + a*(1.0-t);
+}
+
+aabb_overlap (float x1, float y1, float x2, float y2 // coordinate pair for first box
+             ,float x3, float y3, float x4, float y4)// second box
+{
+    if(x1 < x4 && y1 < y4 &&
+       x3 < x2 && y3 < y2)
+        return true;
+    else
+        return false;
+}
+
 void HSBtoRGB( float hue, float saturation, float brightness, int rgb[3] )
 {
     if ( saturation == 0 )
@@ -93,13 +109,18 @@ void RGBtoHSB( int r, int g, int b, float hsb[3] )
     hsb[2] = brightness;
 }
 
-double sign( double a )
+double crop1( double a )
 {
     if ( a > -1 && a < 0 )
     {
         return -1;
     }
     return ((a == 0) ? 0 : ceil( a ) / fabs( ceil( a ) ));
+}
+
+int sign( double a )
+{
+    return (a > 0) - (a < 0);
 }
 
 double absolute( double a )

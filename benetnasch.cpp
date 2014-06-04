@@ -223,10 +223,10 @@ namespace Sys
     struct Hull : public Component
     {
         Hull(entityid_t myEntity);
-        double h, w;
+        double h, w, xoffset, yoffset;
     };
     Collection<Hull> Hulls;
-    Hull::Hull(entityid_t myEntity) : Component(myEntity), h(0), w(0)
+    Hull::Hull(entityid_t myEntity) : Component(myEntity), h(0), w(0), xoffset(0), yoffset(0)
     {
         Hulls.List.push_back(this);
     }
@@ -291,14 +291,12 @@ namespace Sys
     {
         position = Positions.EnforceDependency(myEntity);
         hull = Hulls.EnforceDependency(myEntity);
-        xoffset = 0;
-        yoffset = 0;
         BoxDrawables.List.push_back(this);
     }
     SDL_Rect * BoxDrawable::getShape()
     {
-        shape = {int(ceil(position->x+xoffset)),
-                 int(ceil(position->y+yoffset)),
+        shape = {int(ceil(position->x+hull->xoffset)),
+                 int(ceil(position->y+hull->yoffset)),
                  int(round(hull->w)),
                  int(round(hull->h))};
         return &shape;
@@ -387,32 +385,229 @@ namespace Sys
         {
             for(auto character : Sys::Characters)
             {
+                
+                /*
+                 *  predef
+                 */
                 double &x = character->position->x;
                 double &y = character->position->y;
                 double &hspeed = character->hspeed;
                 double &vspeed = character->vspeed;
-                float delta = 1.0/Time::Framerate;
+                float delta = 1/Time::Framerate;
                 
-                if(Input::inputs[Input::RIGHT])
-                    hspeed += 2000*delta;
-                if(Input::inputs[Input::LEFT])
-                    hspeed -= 2000*delta;
+                /* set up muh functions */
+                int stepsize = 4;
                 
-                hspeed *= pow(0.01, delta);
-                if (Input::inputs[Input::RIGHT] == Input::inputs[Input::LEFT])
+                auto place_meeting = [character](int x, int y)
                 {
-                    auto hsign = (0 < hspeed) - (hspeed < 0);
+                    bool collided = false;
+                    for(auto wallchunk : Sys::BoxDrawables)
+                    {
+                        auto place_meeting = [character, wallchunk](int x, int y)
+                        {
+                            return aabb_overlap(wallchunk->position->x, wallchunk->position->y,
+                                                wallchunk->position->x+ wallchunk->hull->w, wallchunk->position->y+ wallchunk->hull->h,
+                                                character->position->x + x, character->position->y + y,
+                                                character->position->x + x + character->hull->w, character->position->y + y + character->hull->h);
+                        };
+                        
+                        if(place_meeting(x, y))
+                        {
+                            collided = true;
+                            break;
+                        }
+                    }
+                    return collided;
+                };
+                auto move_contact = [&x, &y, place_meeting](double hvec, double vvec)
+                {
+                    // Move our position by a movement vector until we hit a filtered-in object or we finish the movement's magnitude.
+                    
+                    const int MAX_I = 64; // subpixel precision (MAX_I = 8 means 1/8th of a pixel)
+                    int i = MAX_I;
+                    
+                    double maxDistance = vector_length(hvec, vvec); // maximum total travel
+                    double sfac = maximum(absolute(hvec), absolute(vvec)); // Used to get pixel chunks from the movement vector
+                   
+                    double moveX = hvec/sfac*i/MAX_I,
+                           moveY = vvec/sfac*i/MAX_I,
+                           totalMoved = 0;
+                   
+                    while ( totalMoved < maxDistance and i > 0 )
+                    {
+                        moveX = hvec/sfac * i/MAX_I * minimum(1, maxDistance - totalMoved);
+                        moveY = vvec/sfac * i/MAX_I * minimum(1, maxDistance - totalMoved);
+                       
+                        if (!place_meeting(x + moveX*i/MAX_I, y + moveY*i/MAX_I))
+                        {
+                            x += moveX * i/MAX_I;
+                            y += moveY * i/MAX_I;
+                            totalMoved += vector_length(moveX * i/MAX_I, moveY * i/MAX_I);
+                           
+                            if(i < MAX_I) // implies we have gotten contact before, then freed up
+                            {
+                                puts("Moved to contact...");
+                                break;
+                            }
+                        }
+                        else // got contact, eject from contact
+                            i -= 1;
+                    }
+                 
+                    return totalMoved;
+                };
+                
+                /*
+                 *  handle accelerations
+                 */
+                
+                float taccel = 2000*delta;
+                float fric_moving = pow(0.1, delta);
+                float fric_counter = pow(0.01, delta);
+                float fric_still = pow(0.02, delta);
+                int crawlspeed = 75;
+                int walkspeed = 250;
+                int runspeed = 500;
+                float struggle = 0.6;
+                
+                int direction = (Input::inputs[Input::RIGHT] - Input::inputs[Input::LEFT]);
+                
+                // If we're moving too slowly, our acceleration should be dampened
+                if (direction == int(sign(hspeed)) or hspeed == 0)
+                {
+                    if (abs(hspeed) >= walkspeed)
+                        ;
+                    else if (abs(hspeed) <= crawlspeed)
+                        taccel *= struggle;
+                    else
+                    {
+                        float factor =
+                          (float(abs(hspeed)) - crawlspeed)
+                          / walkspeed;
+                        taccel *= lerp(struggle, 1.0f, factor);
+                    }
+                }
+                
+                // calculate post-control speed
+                float walk_solution;
+                if(abs(hspeed) < crawlspeed) // no friction if extremely slow
+                    walk_solution = hspeed + taccel*direction;
+                else // friction if we're extremely fast
+                    walk_solution = (hspeed + taccel*direction) * fric_moving;
+                
+                // If we're changing directions, we do either friction OR deacceleration; whichever one is stronger
+                // this is the counter-friction
+                auto fric_solution = hspeed * fric_counter; // same sign
+                
+                if(direction < 0) // prefer more negative
+                    hspeed = minimum(walk_solution, fric_solution);
+                if(direction > 0) // more positive
+                    hspeed = maximum(walk_solution, fric_solution);
+                    
+                auto hsign = (0 < hspeed) - (hspeed < 0);
+                
+                if (abs(hspeed) > float(runspeed))
+                    hspeed = hsign * runspeed;
+                if (direction == 0)
+                {
+                    hspeed *= fric_still;
                     hspeed = absolute(hspeed) - 500*delta;
                     hspeed = hspeed > 0 ? hspeed : 0;
                     hspeed *= hsign;
                 }
                 
-                x += hspeed*delta;
-                if(true) // debug
+                if(!place_meeting(0, (vspeed+2000)*delta))
                 {
-                    std::cout << std::fixed << std::setprecision(4)
-                              <<"\nx, h, d " << x << " " << hspeed << " " << delta;
+                    vspeed += 2000*delta;
+                    if(vspeed > 2000)
+                        vspeed = 2000;
+                    puts("GRAVITY");
                 }
+                
+                /*
+                 *  muh movement solving
+                 */
+                
+                hspeed *= delta;
+                vspeed *= delta;
+                
+                /* movement solver starts here */
+                // we're in the wallmask
+                if (place_meeting(0, 0))
+                {
+                    for (int i = 1; i < stepsize; i += 1)
+                    {
+                        if(!place_meeting(0, -i))
+                        {
+                            y -= i;
+                            puts("eject up");
+                            break;
+                        }
+                    }
+                }
+                // we collided with something
+                else if (place_meeting(hspeed, vspeed))
+                {
+                    // check for up slopes and down sloped ceilings
+                    auto oy = y;
+                    for (int i = stepsize; i < hspeed; i += stepsize)
+                    {
+                        if(!place_meeting(hspeed, i))
+                        {
+                            y += i;
+                            puts("upslope");
+                            break;
+                        }
+                        if(!place_meeting(hspeed, -i))
+                        {
+                            y -= i;
+                            puts("downceil");
+                            break;
+                        }
+                    }
+                    // no slope
+                    if(y == oy)
+                    {
+                        move_contact(hspeed, vspeed);
+                        // check for walls
+                        if(place_meeting(sign(hspeed), 0))
+                        {
+                            puts("h");
+                            hspeed = 0;
+                        }
+                        // assume floor otherwise
+                        else if(place_meeting(0, sign(vspeed)))
+                        {
+                            puts("w");
+                            vspeed = 0;
+                        }
+                        else
+                        {
+                            puts("Weird collision!");
+                        }
+                    }
+                }
+                // we did not collide with something
+                else
+                {
+                    puts("nocol");
+                    // we might want to "down" a slope
+                    for (int i = 1; i < hspeed; i += stepsize)
+                    {
+                        if(!place_meeting(0, i) and place_meeting(0, i+1))
+                        {
+                            puts("downslope");
+                            y += i;
+                            break;
+                        }
+                    }
+                }
+                
+                x += hspeed;
+                y += vspeed;
+                
+                hspeed /= delta;
+                vspeed /= delta;
             };
             return false;
         }
@@ -468,7 +663,7 @@ bool sys_init()
     new Sys::BoxDrawable(Ent::New());
     auto d = Sys::BoxDrawables.List[0];
     
-    d->position->x = 50;
+    d->position->x = 0;
     d->position->y = 120;
     d->hull->h = 50;
     d->hull->w = 400;
@@ -492,7 +687,7 @@ bool main_init()
     Sys::MainWindow = SDL_CreateWindow("Benetnasch", 300, 300, MAX_X, MAX_Y, SDL_WINDOW_SHOWN);
     if (Sys::MainWindow == nullptr)
         std::cout << "Could not create an SDL window: " << SDL_GetError() << std::endl;
-    Sys::Renderer = SDL_CreateRenderer(Sys::MainWindow, -1, SDL_RENDERER_ACCELERATED || SDL_RENDERER_PRESENTVSYNC);
+    Sys::Renderer = SDL_CreateRenderer(Sys::MainWindow, -1, SDL_RENDERER_TARGETTEXTURE);
     if (Sys::Renderer == nullptr)
         std::cout << "Could not create an SDL renderer: " << SDL_GetError() << std::endl;
     
