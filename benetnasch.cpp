@@ -836,9 +836,9 @@ int main(int argc, char *argv[])
     
     std::cout << "Testing move_contact straight down along a wall...\n";
     
-    Sys::Physicsers::move_contact(Sys::Characters.List[1], 0, 100);
+    Sys::Physicsers::move_contact(Sys::Characters.List[0], 0, 100);
     
-    if(16.0f - Sys::Characters.List[1]->position->y < 0.0001)
+    if(16.0f - Sys::Characters.List[0]->position->y < 0.0001)
         std::cout << "move_contact straight down along a wall succeeded\n";
     else
         std::cout << "TEST FAILED move_contact straight down along a wall\n";
