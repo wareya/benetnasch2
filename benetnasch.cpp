@@ -388,15 +388,10 @@ namespace Sys
             bool collided = false;
             for(auto wallchunk : Sys::BoxDrawables)
             {
-                auto place_meeting = [character, wallchunk](float x, float y)
-                {
-                    return aabb_overlap(wallchunk->position->x, wallchunk->position->y,
-                                        wallchunk->position->x+ wallchunk->hull->w, wallchunk->position->y+ wallchunk->hull->h,
-                                        character->position->x + x, character->position->y + y,
-                                        character->position->x + x + character->hull->w, character->position->y + y + character->hull->h);
-                };
-                
-                if(place_meeting(x, y))
+                if(aabb_overlap(wallchunk->position->x, wallchunk->position->y,
+                                wallchunk->position->x+ wallchunk->hull->w, wallchunk->position->y+ wallchunk->hull->h,
+                                character->position->x + x, character->position->y + y,
+                                character->position->x + x + character->hull->w, character->position->y + y + character->hull->h))
                 {
                     collided = true;
                     break;
@@ -404,20 +399,15 @@ namespace Sys
             }
             return collided;
         }
-        std::vector<BoxDrawable*> place_meeting_which (Character * character, float x, float y)
+        std::vector<BoxDrawable*> place_meeting_which (float x1, float y1, float x2, float y2, float x, float y)
         {
             std::vector<BoxDrawable*> overlaps;
             for(auto wallchunk : Sys::BoxDrawables)
             {
-                auto place_meeting = [character, wallchunk](float x, float y)
-                {
-                    return aabb_overlap(wallchunk->position->x, wallchunk->position->y,
-                                        wallchunk->position->x+ wallchunk->hull->w, wallchunk->position->y+ wallchunk->hull->h,
-                                        character->position->x + x, character->position->y + y,
-                                        character->position->x + x + character->hull->w, character->position->y + y + character->hull->h);
-                };
-                
-                if(place_meeting(x, y))
+                if(aabb_overlap(wallchunk->position->x                   , wallchunk->position->y                   ,
+                                wallchunk->position->x+wallchunk->hull->w, wallchunk->position->y+wallchunk->hull->h,
+                                x1, y1,
+                                x2, y2))
                 {
                     overlaps.push_back(wallchunk);
                 }
@@ -447,7 +437,7 @@ namespace Sys
         }*/
         // moves our character to contact with a wall chunk
         // returns square distance traveled
-        // move_contact reference image: http://i.imgur.com/tq1rulr.png
+        // algorithm reference image: http://i.imgur.com/tq1rulr.png
         std::tuple<float, float> move_contact (Character * character, double hvec, double vvec)
         {
             if(hvec == 0 and vvec == 0)
@@ -459,9 +449,13 @@ namespace Sys
             double &height = character->hull->h;
             auto &x = character->position->x;
             auto &y = character->position->y;
+            float xsign = ssign(hvec);
+            float ysign = ssign(vvec);
             printf("input: %f %f %f %f %f %f\n", x, y, width, height, hvec, vvec);
-            // TODO: make "which" include rects such as the red one in http://i.imgur.com/mP2prGB.png
-            auto which = place_meeting_which(character, hvec, vvec);
+            
+            // make a motion bounding rect and include any collision rect that overlaps it
+            auto which = place_meeting_which(x+(xsign < 0 ? width : 0), y+(ysign < 0 ? height : 0),
+                                             x+hvec+(xsign > 0 ? width : 0), y+vvec+(ysign > 0 ? height : 0), hvec, vvec);
             std::cout << which.size() << "\n";
             
             if(which.size() == 0)
@@ -473,17 +467,24 @@ namespace Sys
             }
             else
             {
-                float xsign = ssign(hvec);
-                float ysign = ssign(vvec);
                 auto oldx = x;
                 auto oldy = y;
                 
                 auto red_x = x + hvec + (xsign > 0 ? width  : 0);
                 auto red_y = y + vvec + (ysign > 0 ? height : 0);
-                printf("character: %f %f\n", red_x, red_y);
-                // TODO: implement multiple boxes and ejection distance comparison
-                for(auto box : which)
+                printf("red: %f %f\n", red_x, red_y);
+                
+                float furthest = 0;
+                float rx;
+                float ry;
+                // loop through each box to eject from and pick the one with the furthest ejection
+                for(auto box : which) // this WILL run at least once
                 {
+                    // not actually used for anything ignore /s
+                    auto eject_x = x;
+                    auto eject_y = y;
+                    
+                    // super cool important things that are used for everything
                     auto green_x = box->position->x + (xsign > 0 ? 0 : box->hull->w);
                     auto green_y = box->position->y + (ysign > 0 ? 0 : box->hull->h);
                     
@@ -501,8 +502,6 @@ namespace Sys
                             blue_x = green_x;
                             puts("side ejection");
                             printf("blue: %f %f\n", blue_x, blue_y);
-                            x = blue_x - (xsign > 0 ? width  : 0);
-                            y = blue_y - (ysign > 0 ? height : 0);
                             goto tail;
                         }
                     }
@@ -510,14 +509,23 @@ namespace Sys
                     blue_x = red_x - (inner_height/vvec)*hvec;
                     blue_y = green_y;
                     puts("nonside ejection");
-                    printf("end: %f %f\n", blue_x, blue_y);
-                    x = blue_x - (xsign > 0 ? width  : 0);
-                    y = blue_y - (ysign > 0 ? height : 0);
+                    printf("blue: %f %f\n", blue_x, blue_y);
                     
                     tail:
-                    printf("moved: %f %f\n", x - oldx, y - oldy);
-                    return std::tuple<float, float>(x - oldx, y - oldy);
+                    eject_x = blue_x - (xsign > 0 ? width  : 0);
+                    eject_y = blue_y - (ysign > 0 ? height : 0);
+                    auto eject_sqdist = sqdist(blue_x - red_x, blue_y - red_y); // order doesn't matter because square
+                    if(eject_sqdist > furthest)
+                    {
+                        furthest = eject_sqdist;
+                        rx = eject_x;
+                        ry = eject_y;
+                    }
                 }
+                x = rx;
+                y = ry;
+                printf("moved: %f %f\n", x - oldx, y - oldy);
+                return std::tuple<float, float>(x - oldx, y - oldy);
             }
         }
         /* systems */
@@ -532,7 +540,7 @@ namespace Sys
                 double &y = character->position->y;
                 double &hspeed = character->hspeed;
                 double &vspeed = character->vspeed;
-                float delta = 1/Time::Framerate;
+                double delta = 1/Time::Framerate;
                 
                 /* set up muh functions */
                 int stepsize = 4;
@@ -552,6 +560,7 @@ namespace Sys
                 float struggle = 0.6;
                 
                 int direction = (Input::inputs[Input::RIGHT] - Input::inputs[Input::LEFT]);
+                int jumping = (Input::inputs[Input::JUMP] & !Input::last_inputs[Input::JUMP]);
                 
                 // If we're moving too slowly, our acceleration should be dampened
                 if (direction == int(sign(hspeed)) or hspeed == 0)
@@ -597,13 +606,15 @@ namespace Sys
                     hspeed *= hsign;
                 }
                 
-                if(!place_meeting(character, 0, (vspeed+2000)*delta))
+                if(!place_meeting(character, 0, 2000*delta))
                 {
                     vspeed += 2000*delta;
                     if(vspeed > 2000)
                         vspeed = 2000;
                     puts("GRAVITY");
                 }
+                if(jumping)
+                    vspeed = -30;
                 
                 /*
                  *  muh movement solving
@@ -677,7 +688,7 @@ namespace Sys
                 // we did not collide with something
                 else
                 {
-                    puts("nocol");
+                    //puts("nocol");
                     // we might want to "down" a slope
                     for (int i = 1; i < hspeed; i += stepsize)
                     {
@@ -695,7 +706,7 @@ namespace Sys
                 
                 hspeed /= delta;
                 vspeed /= delta;
-                puts("end frame");
+                //puts("end frame");
             };
             return false;
         }
@@ -806,7 +817,7 @@ int main(int argc, char *argv[])
      * h: 48
      */
     auto d = Sys::BoxDrawables.List[0];
-    d->position->x = 0;
+    d->position->x = 40;
     d->position->y = 0;
     d->hull->w = 10;
     d->hull->h = 48;

@@ -21,11 +21,14 @@ aabb_overlap (float x1, float y1, float x2, float y2,// coordinate pair for firs
     if(x1 < x4 && y1 < y4 &&
        x3 < x2 && y3 < y2)
     {
-        printf("overlap test true at %f %f %f %f\n", x1, x2, y1, y2);
+        //printf("overlap test true at %f %f %f %f\n", x3, x4, y3, y4);
         return true;
     }
     else
+    {
+        //printf("overlap test false at %f %f %f %f\n", x3, x4, y3, y4);
         return false;
+    }
 } 
 
 void HSBtoRGB( float hue, float saturation, float brightness, int rgb[3] )
