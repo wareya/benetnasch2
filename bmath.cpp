@@ -15,15 +15,18 @@ CType lerp(CType a, CType b, CType t) // a to b, t from 0-1
     return b*t + a*(1.0-t);
 }
 
-aabb_overlap (float x1, float y1, float x2, float y2 // coordinate pair for first box
-             ,float x3, float y3, float x4, float y4)// second box
+aabb_overlap (float x1, float y1, float x2, float y2,// coordinate pair for first box
+              float x3, float y3, float x4, float y4)// second box
 {
     if(x1 < x4 && y1 < y4 &&
        x3 < x2 && y3 < y2)
+    {
+        printf("overlap test true at %f %f %f %f\n", x1, x2, y1, y2);
         return true;
+    }
     else
         return false;
-}
+} 
 
 void HSBtoRGB( float hue, float saturation, float brightness, int rgb[3] )
 {
@@ -111,16 +114,23 @@ void RGBtoHSB( int r, int g, int b, float hsb[3] )
 
 double crop1( double a )
 {
-    if ( a > -1 && a < 0 )
-    {
+    if ( a < -1)
         return -1;
-    }
-    return ((a == 0) ? 0 : ceil( a ) / fabs( ceil( a ) ));
+    if ( a > 1)
+        return 1;
+    return a;
 }
 
 int sign( double a )
 {
     return (a > 0) - (a < 0);
+}
+
+
+//"safe" sign (returns positive for 0)
+int ssign (double a)
+{
+    return (!(a < 0)) - (a < 0);
 }
 
 double absolute( double a )
@@ -134,9 +144,14 @@ double point_distance( double x1, double y1, double x2, double y2 )
 {
     return sqrt( pow( x2 - x1, 2 ) + pow( y2 - y1, 2 ) );
 }
-double vector_length( double x1, double y1 )
+double vector_length( float x, float y )
 {
-    return sqrt( pow( x1, 2 ) + pow( y1, 2 ) );
+    return sqrt( pow( x, 2 ) + pow( y, 2 ) );
+}
+
+double sqdist( float x, float y )
+{
+    return pow( x, 2 ) + pow( y, 2 );
 }
 
 double point_direction( double x1, double y1, double x2, double y2 )

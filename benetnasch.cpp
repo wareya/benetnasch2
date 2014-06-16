@@ -6,6 +6,7 @@
 #include <cmath>
 
 #include <SDL2/SDL.h>
+#undef main
 #include <SDL2/SDL_image.h>
 #include <nall/set.hpp>
 #include "bmath.cpp"
@@ -381,11 +382,149 @@ namespace Sys
     }
     namespace Physicsers
     {
+        /* not systems */
+        bool place_meeting (Character * character, float x, float y)
+        {
+            bool collided = false;
+            for(auto wallchunk : Sys::BoxDrawables)
+            {
+                auto place_meeting = [character, wallchunk](float x, float y)
+                {
+                    return aabb_overlap(wallchunk->position->x, wallchunk->position->y,
+                                        wallchunk->position->x+ wallchunk->hull->w, wallchunk->position->y+ wallchunk->hull->h,
+                                        character->position->x + x, character->position->y + y,
+                                        character->position->x + x + character->hull->w, character->position->y + y + character->hull->h);
+                };
+                
+                if(place_meeting(x, y))
+                {
+                    collided = true;
+                    break;
+                }
+            }
+            return collided;
+        }
+        std::vector<BoxDrawable*> place_meeting_which (Character * character, float x, float y)
+        {
+            std::vector<BoxDrawable*> overlaps;
+            for(auto wallchunk : Sys::BoxDrawables)
+            {
+                auto place_meeting = [character, wallchunk](float x, float y)
+                {
+                    return aabb_overlap(wallchunk->position->x, wallchunk->position->y,
+                                        wallchunk->position->x+ wallchunk->hull->w, wallchunk->position->y+ wallchunk->hull->h,
+                                        character->position->x + x, character->position->y + y,
+                                        character->position->x + x + character->hull->w, character->position->y + y + character->hull->h);
+                };
+                
+                if(place_meeting(x, y))
+                {
+                    overlaps.push_back(wallchunk);
+                }
+            }
+            return overlaps;
+        }
+        /*
+        std::vector<BoxDrawable*> line_overlapping_which (float x1, float y1, float x2, float y2)
+        {
+            std::vector<BoxDrawable*> overlaps;
+            for(auto wallchunk : Sys::BoxDrawables)
+            {
+                auto place_meeting = [wallchunk](float x, float y)
+                {
+                    return aabb_overlap(wallchunk->position->x, wallchunk->position->y,
+                                        wallchunk->position->x+ wallchunk->hull->w, wallchunk->position->y+ wallchunk->hull->h,
+                                        character->position->x + x, character->position->y + y,
+                                        character->position->x + x + character->hull->w, character->position->y + y + character->hull->h);
+                };
+                
+                if(place_meeting(x, y))
+                {
+                    overlaps.push_back(wallchunk);
+                }
+            }
+            return overlaps;
+        }*/
+        // moves our character to contact with a wall chunk
+        // returns square distance traveled
+        // move_contact reference image: http://i.imgur.com/tq1rulr.png
+        std::tuple<float, float> move_contact (Character * character, double hvec, double vvec)
+        {
+            if(hvec == 0 and vvec == 0)
+            {
+                puts("empty move_contact call");
+                return std::tuple<float, float>(0.0f, 0.0f);
+            }
+            double &width = character->hull->w;
+            double &height = character->hull->h;
+            auto &x = character->position->x;
+            auto &y = character->position->y;
+            printf("input: %f %f %f %f %f %f\n", x, y, width, height, hvec, vvec);
+            // TODO: make "which" include rects such as the red one in http://i.imgur.com/mP2prGB.png
+            auto which = place_meeting_which(character, hvec, vvec);
+            std::cout << which.size() << "\n";
+            
+            if(which.size() == 0)
+            {
+                x += hvec;
+                y += vvec;
+                puts("no collision at move_contact");
+                return std::tuple<float, float>(hvec, vvec);
+            }
+            else
+            {
+                float xsign = ssign(hvec);
+                float ysign = ssign(vvec);
+                auto oldx = x;
+                auto oldy = y;
+                
+                auto red_x = x + hvec + (xsign > 0 ? width  : 0);
+                auto red_y = y + vvec + (ysign > 0 ? height : 0);
+                printf("character: %f %f\n", red_x, red_y);
+                // TODO: implement multiple boxes and ejection distance comparison
+                for(auto box : which)
+                {
+                    auto green_x = box->position->x + (xsign > 0 ? 0 : box->hull->w);
+                    auto green_y = box->position->y + (ysign > 0 ? 0 : box->hull->h);
+                    
+                    auto inner_height = red_y - green_y;
+                    auto inner_width  = red_x - green_x;
+                    
+                    printf("green and inner: %f %f %f %f\n", green_x, green_y, inner_width, inner_height);
+                    
+                    float blue_x, blue_y;
+                    if(hvec != 0)
+                    {
+                        blue_y = red_y - (inner_width/hvec)*vvec;
+                        if(ssign(blue_y - green_y) == xsign)
+                        {
+                            blue_x = green_x;
+                            puts("side ejection");
+                            printf("blue: %f %f\n", blue_x, blue_y);
+                            x = blue_x - (xsign > 0 ? width  : 0);
+                            y = blue_y - (ysign > 0 ? height : 0);
+                            goto tail;
+                        }
+                    }
+                    // falls through to here if the blue dot is on the wrong side of green line
+                    blue_x = red_x - (inner_height/vvec)*hvec;
+                    blue_y = green_y;
+                    puts("nonside ejection");
+                    printf("end: %f %f\n", blue_x, blue_y);
+                    x = blue_x - (xsign > 0 ? width  : 0);
+                    y = blue_y - (ysign > 0 ? height : 0);
+                    
+                    tail:
+                    printf("moved: %f %f\n", x - oldx, y - oldy);
+                    return std::tuple<float, float>(x - oldx, y - oldy);
+                }
+            }
+        }
+        /* systems */
         bool MoveCharacters()
         {
             for(auto character : Sys::Characters)
             {
-                
                 /*
                  *  predef
                  */
@@ -398,64 +537,6 @@ namespace Sys
                 /* set up muh functions */
                 int stepsize = 4;
                 
-                auto place_meeting = [character](int x, int y)
-                {
-                    bool collided = false;
-                    for(auto wallchunk : Sys::BoxDrawables)
-                    {
-                        auto place_meeting = [character, wallchunk](int x, int y)
-                        {
-                            return aabb_overlap(wallchunk->position->x, wallchunk->position->y,
-                                                wallchunk->position->x+ wallchunk->hull->w, wallchunk->position->y+ wallchunk->hull->h,
-                                                character->position->x + x, character->position->y + y,
-                                                character->position->x + x + character->hull->w, character->position->y + y + character->hull->h);
-                        };
-                        
-                        if(place_meeting(x, y))
-                        {
-                            collided = true;
-                            break;
-                        }
-                    }
-                    return collided;
-                };
-                auto move_contact = [&x, &y, place_meeting](double hvec, double vvec)
-                {
-                    // Move our position by a movement vector until we hit a filtered-in object or we finish the movement's magnitude.
-                    
-                    const int MAX_I = 64; // subpixel precision (MAX_I = 8 means 1/8th of a pixel)
-                    int i = MAX_I;
-                    
-                    double maxDistance = vector_length(hvec, vvec); // maximum total travel
-                    double sfac = maximum(absolute(hvec), absolute(vvec)); // Used to get pixel chunks from the movement vector
-                   
-                    double moveX = hvec/sfac*i/MAX_I,
-                           moveY = vvec/sfac*i/MAX_I,
-                           totalMoved = 0;
-                   
-                    while ( totalMoved < maxDistance and i > 0 )
-                    {
-                        moveX = hvec/sfac * i/MAX_I * minimum(1, maxDistance - totalMoved);
-                        moveY = vvec/sfac * i/MAX_I * minimum(1, maxDistance - totalMoved);
-                       
-                        if (!place_meeting(x + moveX*i/MAX_I, y + moveY*i/MAX_I))
-                        {
-                            x += moveX * i/MAX_I;
-                            y += moveY * i/MAX_I;
-                            totalMoved += vector_length(moveX * i/MAX_I, moveY * i/MAX_I);
-                           
-                            if(i < MAX_I) // implies we have gotten contact before, then freed up
-                            {
-                                puts("Moved to contact...");
-                                break;
-                            }
-                        }
-                        else // got contact, eject from contact
-                            i -= 1;
-                    }
-                 
-                    return totalMoved;
-                };
                 
                 /*
                  *  handle accelerations
@@ -516,7 +597,7 @@ namespace Sys
                     hspeed *= hsign;
                 }
                 
-                if(!place_meeting(0, (vspeed+2000)*delta))
+                if(!place_meeting(character, 0, (vspeed+2000)*delta))
                 {
                     vspeed += 2000*delta;
                     if(vspeed > 2000)
@@ -530,14 +611,16 @@ namespace Sys
                 
                 hspeed *= delta;
                 vspeed *= delta;
+                auto h_auto = hspeed;
+                auto v_auto = vspeed;
                 
                 /* movement solver starts here */
                 // we're in the wallmask
-                if (place_meeting(0, 0))
+                if (place_meeting(character, 0, 0))
                 {
                     for (int i = 1; i < stepsize; i += 1)
                     {
-                        if(!place_meeting(0, -i))
+                        if(!place_meeting(character, 0, -i))
                         {
                             y -= i;
                             puts("eject up");
@@ -546,19 +629,19 @@ namespace Sys
                     }
                 }
                 // we collided with something
-                else if (place_meeting(hspeed, vspeed))
+                if (place_meeting(character, hspeed, vspeed))
                 {
                     // check for up slopes and down sloped ceilings
                     auto oy = y;
                     for (int i = stepsize; i < hspeed; i += stepsize)
                     {
-                        if(!place_meeting(hspeed, i))
+                        if(!place_meeting(character, hspeed, i))
                         {
                             y += i;
                             puts("upslope");
                             break;
                         }
-                        if(!place_meeting(hspeed, -i))
+                        if(!place_meeting(character, hspeed, -i))
                         {
                             y -= i;
                             puts("downceil");
@@ -568,22 +651,26 @@ namespace Sys
                     // no slope
                     if(y == oy)
                     {
-                        move_contact(hspeed, vspeed);
+                        float mx, my;
+                        std::tie(mx, my) = move_contact(character, hspeed, vspeed);
+                        std::cout << "move_contact-ed " << vector_length(vspeed, hspeed) << " to " << vector_length(mx, my) << "\n";
+                        h_auto -= mx;
+                        v_auto -= my;
+                        //h_auto -= hspeed * dist/vector_length(hspeed, vspeed);
+                        //v_auto -= vspeed * dist/vector_length(hspeed, vspeed);
                         // check for walls
-                        if(place_meeting(sign(hspeed), 0))
-                        {
-                            puts("h");
-                            hspeed = 0;
-                        }
-                        // assume floor otherwise
-                        else if(place_meeting(0, sign(vspeed)))
+                        if(place_meeting(character, crop1(hspeed), 0))
                         {
                             puts("w");
-                            vspeed = 0;
+                            hspeed = 0;
+                            h_auto = 0;
                         }
+                        // assume floor otherwise
                         else
                         {
-                            puts("Weird collision!");
+                            puts("f");
+                            vspeed = 0;
+                            v_auto = 0;
                         }
                     }
                 }
@@ -594,7 +681,7 @@ namespace Sys
                     // we might want to "down" a slope
                     for (int i = 1; i < hspeed; i += stepsize)
                     {
-                        if(!place_meeting(0, i) and place_meeting(0, i+1))
+                        if(!place_meeting(character, 0, i) and place_meeting(character, 0, i+1))
                         {
                             puts("downslope");
                             y += i;
@@ -603,11 +690,12 @@ namespace Sys
                     }
                 }
                 
-                x += hspeed;
-                y += vspeed;
+                x += h_auto;
+                y += v_auto;
                 
                 hspeed /= delta;
                 vspeed /= delta;
+                puts("end frame");
             };
             return false;
         }
@@ -645,8 +733,8 @@ namespace Sys
         SDL_RenderFillRect( Renderer, &shape );
         
         // Draw simple textured drawables
-        Renderers::TexturedDrawables();
         Renderers::BoxDrawables();
+        Renderers::TexturedDrawables();
         
         return false;
     }
@@ -700,7 +788,62 @@ bool main_init()
     
     return 0;
 }
-
+#ifdef TESTS
+int main(int argc, char *argv[])
+{
+    new Sys::Character(Ent::New());
+    /* Character
+     * x: 0
+     * y: 0
+     * w: 32
+     * h: 48
+     */
+    new Sys::BoxDrawable(Ent::New());
+    /* BoxDrawable
+     * x: 40
+     * y: 0
+     * w: 10
+     * h: 48
+     */
+    auto d = Sys::BoxDrawables.List[0];
+    d->position->x = 0;
+    d->position->y = 0;
+    d->hull->w = 10;
+    d->hull->h = 48;
+    
+    std::cout << "Testing move_contact right...\n";
+    
+    Sys::Physicsers::move_contact(Sys::Characters.List[0], 100, 0);
+    
+    if(8.0f - Sys::Characters.List[0]->position->x < 0.0001)
+        std::cout << "move_contact rightwards succeeded\n";
+    else
+        std::cout << "TEST FAILED move_contact right\n";
+    
+    
+    new Sys::BoxDrawable(Ent::New());
+    /* BoxDrawable
+     * x: 0
+     * y: 64
+     * w: 40
+     * h: 4
+     */
+    d = Sys::BoxDrawables.List[1];
+    d->position->x = 0;
+    d->position->y = 64;
+    d->hull->w = 40;
+    d->hull->h = 4;
+    
+    std::cout << "Testing move_contact straight down along a wall...\n";
+    
+    Sys::Physicsers::move_contact(Sys::Characters.List[1], 0, 100);
+    
+    if(16.0f - Sys::Characters.List[1]->position->y < 0.0001)
+        std::cout << "move_contact straight down along a wall succeeded\n";
+    else
+        std::cout << "TEST FAILED move_contact straight down along a wall\n";
+}
+#else // not TESTS
 int main(int argc, char *argv[])
 {
     if (main_init())
@@ -727,3 +870,4 @@ int main(int argc, char *argv[])
     }
     return 0;
 }
+#endif // TESTS

@@ -1,0 +1,7 @@
+- Arching/explosive railgun
+- Shotgun on a healer
+
+- Some form of timed-or-tripped-trap
+- "Hitscan" + creates delayed projectiles at the end
+- Can trade urgent control for speed (eg high control at high speed in same dir, low otherwise?)
+
