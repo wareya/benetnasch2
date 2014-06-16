@@ -632,6 +632,7 @@ namespace Sys
                 // we're in the wallmask
                 if (place_meeting(character, 0, 0))
                 {
+                    puts("woaaAAAHHHh we're in the wallmask 1!");
                     for (int i = 1; i < stepsize; i += 1)
                     {
                         if(!place_meeting(character, 0, -i))
@@ -711,6 +712,8 @@ namespace Sys
                 
                 x += h_auto;
                 y += v_auto;
+                if (place_meeting(character, 0, 0))
+                    puts("woaaAAAHHHh we're in the wallmask 2!");
                 
                 hspeed /= delta;
                 vspeed /= delta;
