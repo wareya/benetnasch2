@@ -388,9 +388,9 @@ namespace Sys
             bool collided = false;
             for(auto wallchunk : Sys::BoxDrawables)
             {
-                if(aabb_overlap(wallchunk->position->x, wallchunk->position->y,
-                                wallchunk->position->x+ wallchunk->hull->w, wallchunk->position->y+ wallchunk->hull->h,
-                                character->position->x + x, character->position->y + y,
+                if(aabb_overlap(wallchunk->position->x                     , wallchunk->position->y                     ,
+                                wallchunk->position->x + wallchunk->hull->w, wallchunk->position->y + wallchunk->hull->h,
+                                character->position->x + x                     , character->position->y + y                     ,
                                 character->position->x + x + character->hull->w, character->position->y + y + character->hull->h))
                 {
                     collided = true;
@@ -497,7 +497,7 @@ namespace Sys
                     if(hvec != 0)
                     {
                         blue_y = red_y - (inner_width/hvec)*vvec;
-                        if(ssign(blue_y - green_y) == xsign)
+                        if(ssign(blue_y - green_y)*xsign == xsign)
                         {
                             blue_x = green_x;
                             puts("side ejection");
@@ -551,6 +551,9 @@ namespace Sys
                  */
                 
                 float taccel = 2000*delta;
+                float gravity = 1000*delta;
+                float max_gravity = 2000;
+                float jumpspeed = -300;
                 float fric_moving = pow(0.1, delta);
                 float fric_counter = pow(0.01, delta);
                 float fric_still = pow(0.02, delta);
@@ -606,15 +609,15 @@ namespace Sys
                     hspeed *= hsign;
                 }
                 
-                if(!place_meeting(character, 0, 2000*delta))
+                if(!place_meeting(character, 0, crop1(gravity)))
                 {
-                    vspeed += 2000*delta;
-                    if(vspeed > 2000)
-                        vspeed = 2000;
+                    vspeed += gravity;
+                    if(vspeed > max_gravity)
+                        vspeed = max_gravity;
                     puts("GRAVITY");
                 }
                 if(jumping)
-                    vspeed = -30;
+                    vspeed = jumpspeed;
                 
                 /*
                  *  muh movement solving
@@ -642,25 +645,30 @@ namespace Sys
                 // we collided with something
                 if (place_meeting(character, hspeed, vspeed))
                 {
+                    puts("rectifying a collision");
                     // check for up slopes and down sloped ceilings
                     auto oy = y;
-                    for (int i = stepsize; i < hspeed; i += stepsize)
+                    if(place_meeting(character, hspeed, 0))
                     {
-                        if(!place_meeting(character, hspeed, i))
+                        for (int i = stepsize; i <= abs(hspeed)+stepsize; i += stepsize)
                         {
-                            y += i;
-                            puts("upslope");
-                            break;
-                        }
-                        if(!place_meeting(character, hspeed, -i))
-                        {
-                            y -= i;
-                            puts("downceil");
-                            break;
+                            puts("testing slopes");
+                            if(!place_meeting(character, hspeed, i))
+                            {
+                                y += i;
+                                puts("downceil");
+                                break;
+                            }
+                            else if(!place_meeting(character, hspeed, -i))
+                            {
+                                y -= i;
+                                puts("upslope");
+                                break;
+                            }
                         }
                     }
                     // no slope
-                    if(y == oy)
+                    //if(y == oy)
                     {
                         float mx, my;
                         std::tie(mx, my) = move_contact(character, hspeed, vspeed);
@@ -688,9 +696,9 @@ namespace Sys
                 // we did not collide with something
                 else
                 {
-                    //puts("nocol");
+                    puts("nocol");
                     // we might want to "down" a slope
-                    for (int i = 1; i < hspeed; i += stepsize)
+                    for (int i = 1; i < abs(hspeed)+stepsize; i += stepsize)
                     {
                         if(!place_meeting(character, 0, i) and place_meeting(character, 0, i+1))
                         {
@@ -706,7 +714,7 @@ namespace Sys
                 
                 hspeed /= delta;
                 vspeed /= delta;
-                //puts("end frame");
+                puts("end frame");
             };
             return false;
         }
@@ -760,12 +768,36 @@ bool sys_init()
 {
     new Sys::Character(Ent::New());
     new Sys::BoxDrawable(Ent::New());
-    auto d = Sys::BoxDrawables.List[0];
+    new Sys::BoxDrawable(Ent::New());
+    new Sys::BoxDrawable(Ent::New());
+    new Sys::BoxDrawable(Ent::New());
+    new Sys::BoxDrawable(Ent::New());
     
+    auto d = Sys::BoxDrawables.List[0];
     d->position->x = 0;
     d->position->y = 120;
-    d->hull->h = 50;
     d->hull->w = 400;
+    d->hull->h = 50;
+    d = Sys::BoxDrawables.List[1];
+    d->position->x = 0+64;
+    d->position->y = 120-4;
+    d->hull->w = 400-64;
+    d->hull->h = 4;
+    d = Sys::BoxDrawables.List[2];
+    d->position->x = 0+64+4;
+    d->position->y = 120-4-4;
+    d->hull->w = 400-64-4;
+    d->hull->h = 4;
+    d = Sys::BoxDrawables.List[3];
+    d->position->x = 0+64+4+4;
+    d->position->y = 120-4-4-4;
+    d->hull->w = 400-64-4-4;
+    d->hull->h = 4;
+    d = Sys::BoxDrawables.List[4];
+    d->position->x = 600;
+    d->position->y = 120;
+    d->hull->w = 400;
+    d->hull->h = 50;
     
     Sys::tems.push_back(&Sys::FrameLimit);
     Sys::tems.push_back(&Sys::SDLEvents);
