@@ -1,7 +1,7 @@
 namespace Time
 {
     bool dostart = true;
-    const double Framerate = 30;
+    const double Framerate = 60;
     const double Framesnum = Framerate;
     const double Frametime = 1000/Framerate;
     double ticks = 0;

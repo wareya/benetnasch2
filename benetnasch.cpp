@@ -388,8 +388,8 @@ namespace Sys
             bool collided = false;
             for(auto wallchunk : Sys::BoxDrawables)
             {
-                if(aabb_overlap(wallchunk->position->x                     , wallchunk->position->y                     ,
-                                wallchunk->position->x + wallchunk->hull->w, wallchunk->position->y + wallchunk->hull->h,
+                if(aabb_overlap(wallchunk->position->x                         , wallchunk->position->y                         ,
+                                wallchunk->position->x     + wallchunk->hull->w, wallchunk->position->y     + wallchunk->hull->h,
                                 character->position->x + x                     , character->position->y + y                     ,
                                 character->position->x + x + character->hull->w, character->position->y + y + character->hull->h))
                 {
@@ -442,7 +442,7 @@ namespace Sys
         {
             if(hvec == 0 and vvec == 0)
             {
-                puts("empty move_contact call");
+                //puts("empty move_contact call");
                 return std::tuple<float, float>(0.0f, 0.0f);
             }
             double &width = character->hull->w;
@@ -451,18 +451,19 @@ namespace Sys
             auto &y = character->position->y;
             float xsign = ssign(hvec);
             float ysign = ssign(vvec);
-            printf("input: %f %f %f %f %f %f\n", x, y, width, height, hvec, vvec);
+            //printf("input: %f %f %f %f %f %f\n", x, y, width, height, hvec, vvec);
             
             // make a motion bounding rect and include any collision rect that overlaps it
-            auto which = place_meeting_which(x+(xsign < 0 ? width : 0), y+(ysign < 0 ? height : 0),
-                                             x+hvec+(xsign > 0 ? width : 0), y+vvec+(ysign > 0 ? height : 0), hvec, vvec);
+            auto which = place_meeting_which(x+(xsign < 0 ? width : 0)     , y+(ysign < 0 ? height : 0)     ,
+                                             x+(xsign > 0 ? width : 0)+hvec, y+(ysign > 0 ? height : 0)+vvec,
+                                             hvec, vvec);
             std::cout << which.size() << "\n";
             
             if(which.size() == 0)
             {
                 x += hvec;
                 y += vvec;
-                puts("no collision at move_contact");
+                //puts("no collision at move_contact");
                 return std::tuple<float, float>(hvec, vvec);
             }
             else
@@ -472,7 +473,7 @@ namespace Sys
                 
                 auto red_x = x + hvec + (xsign > 0 ? width  : 0);
                 auto red_y = y + vvec + (ysign > 0 ? height : 0);
-                printf("red: %f %f\n", red_x, red_y);
+                //printf("red: %f %f\n", red_x, red_y);
                 
                 float furthest = 0;
                 float rx;
@@ -491,25 +492,25 @@ namespace Sys
                     auto inner_height = red_y - green_y;
                     auto inner_width  = red_x - green_x;
                     
-                    printf("green and inner: %f %f %f %f\n", green_x, green_y, inner_width, inner_height);
+                    //printf("green and inner: %f %f %f %f\n", green_x, green_y, inner_width, inner_height);
                     
                     float blue_x, blue_y;
                     if(hvec != 0)
                     {
                         blue_y = red_y - (inner_width/hvec)*vvec;
-                        if(ssign(blue_y - green_y)*xsign == xsign)
+                        if(ssign(blue_y - green_y) == ysign)
                         {
                             blue_x = green_x;
-                            puts("side ejection");
-                            printf("blue: %f %f\n", blue_x, blue_y);
+                            //puts("side ejection");
+                            //printf("blue: %f %f\n", blue_x, blue_y);
                             goto tail;
                         }
                     }
                     // falls through to here if the blue dot is on the wrong side of green line
                     blue_x = red_x - (inner_height/vvec)*hvec;
                     blue_y = green_y;
-                    puts("nonside ejection");
-                    printf("blue: %f %f\n", blue_x, blue_y);
+                    //puts("nonside ejection");
+                    //printf("blue: %f %f\n", blue_x, blue_y);
                     
                     tail:
                     eject_x = blue_x - (xsign > 0 ? width  : 0);
@@ -524,7 +525,7 @@ namespace Sys
                 }
                 x = rx;
                 y = ry;
-                printf("moved: %f %f\n", x - oldx, y - oldy);
+                //printf("moved: %f %f\n", x - oldx, y - oldy);
                 return std::tuple<float, float>(x - oldx, y - oldy);
             }
         }
@@ -545,7 +546,7 @@ namespace Sys
                 /* set up muh functions */
                 int stepsize = 4;
                 
-                
+                std::cout << x << " " << y << "\n";
                 /*
                  *  handle accelerations
                  */
@@ -674,23 +675,28 @@ namespace Sys
                         float mx, my;
                         std::tie(mx, my) = move_contact(character, hspeed, vspeed);
                         std::cout << "move_contact-ed " << vector_length(vspeed, hspeed) << " to " << vector_length(mx, my) << "\n";
+                        if(sqdist(mx, my) > sqdist(vspeed, hspeed))
+                            throw;
                         h_auto -= mx;
                         v_auto -= my;
                         //h_auto -= hspeed * dist/vector_length(hspeed, vspeed);
                         //v_auto -= vspeed * dist/vector_length(hspeed, vspeed);
                         // check for walls
-                        if(place_meeting(character, crop1(hspeed), 0))
+                        if(sqdist(mx, my) != sqdist(vspeed, hspeed))
                         {
-                            puts("w");
-                            hspeed = 0;
-                            h_auto = 0;
-                        }
-                        // assume floor otherwise
-                        else
-                        {
-                            puts("f");
-                            vspeed = 0;
-                            v_auto = 0;
+                            if(place_meeting(character, crop1(h_auto), 0))
+                            {
+                                puts("w");
+                                hspeed = 0;
+                                h_auto = 0;
+                            }
+                            // assume floor otherwise
+                            else
+                            {
+                                puts("f");
+                                vspeed = 0;
+                                v_auto = 0;
+                            }
                         }
                     }
                 }
@@ -705,6 +711,8 @@ namespace Sys
                         {
                             puts("downslope");
                             y += i;
+                            vspeed = 0;
+                            v_auto = 0;
                             break;
                         }
                     }
