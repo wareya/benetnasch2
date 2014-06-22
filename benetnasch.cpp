@@ -170,39 +170,23 @@ namespace Sys
     template<typename CType>
     struct Collection
     {
-        std::vector<CType*> List;
+        nall::set<CType*> List;
         
-        // Returns a pointer to the component which refers to a given entity
-        //  or else 0 (if there is no such instance)
-        CType * Refers(entityid_t myEntity)
-        {
-            unsigned i;
-            for(i = 0;
-                i < List.size()
-                && List.at(i)->entityID != myEntity;
-                ++i);
-            
-            return (i != List.size())?List[i]:0;
-        }
-        // Makes sure that there is some instance of this kind of component that
-        // belongs to the given entity
-        CType * EnforceDependency(entityid_t myEntity)
-        {
-            CType * relevant = Refers(myEntity);
-            if(!relevant)
-            {
-                relevant = new CType(myEntity);
-            }
-            return relevant;
-        }
-        
-        typename std::vector<CType*>::iterator begin()
+        typename nall::set<CType*>::iterator begin()
         {
             return List.begin();
         }
-        typename std::vector<CType*>::iterator end()
+        typename nall::set<CType*>::iterator end()
         {
             return List.end();
+        }
+        void add(CType * new_instance)
+        {
+            List.insert(new_instance);
+        }
+        void remove(CType * dying_instance)
+        {
+            List.remove(dying_instance);
         }
     };
     
@@ -210,6 +194,7 @@ namespace Sys
     struct Position : public Component
     {
         Position(entityid_t myEntity);
+        ~Position();
         double x, y;
     };
     // collection of positions
@@ -217,25 +202,35 @@ namespace Sys
     // Constructor will add this new instance to its list
     Position::Position(entityid_t myEntity) : Component(myEntity), x(0), y(0)
     {
-        Positions.List.push_back(this);
+        Positions.add(this);
+    }
+    Position::~Position()
+    {
+        Positions.remove(this);
     }
     
     // Hull component
     struct Hull : public Component
     {
         Hull(entityid_t myEntity);
+        ~Hull();
         double h, w, xoffset, yoffset;
     };
     Collection<Hull> Hulls;
     Hull::Hull(entityid_t myEntity) : Component(myEntity), h(0), w(0), xoffset(0), yoffset(0)
     {
-        Hulls.List.push_back(this);
+        Hulls.add(this);
+    }
+    Hull::~Hull()
+    {
+        Hulls.remove(this);
     }
     
     // Sprite component
     struct TexturedDrawable : public Component
     {
         TexturedDrawable(entityid_t myEntity);
+        ~TexturedDrawable();
         Position * position;
         SDL_Texture * sprite;
         double xoffset, yoffset;
@@ -244,45 +239,78 @@ namespace Sys
     Collection<TexturedDrawable> TexturedDrawables;
     TexturedDrawable::TexturedDrawable(entityid_t myEntity) : Component(myEntity), sprite(NULL), xoffset(0), yoffset(0)
     {
-        position = Positions.EnforceDependency(myEntity);
-        TexturedDrawables.List.push_back(this);
+        position = new Position(myEntity);
+        TexturedDrawables.add(this);
+    }
+    TexturedDrawable::~TexturedDrawable()
+    {
+        delete position;
+        SDL_DestroyTexture(sprite);
+        
+        TexturedDrawables.remove(this);
     }
     bool TexturedDrawable::init(const char * sarg)
     {
         sprite = loadTexture( sarg, Sys::Renderer );
         return sprite != nullptr;
     }
-    
     // Character component
     struct Character : public Component
     {
         Character(entityid_t myEntity);
+        ~Character();
         Position * position;
         Hull * hull;
         TexturedDrawable * sprite;
         double hspeed, vspeed;
+        bool myself;
+        
+        void center_on(float x, float y)
+        {
+            position->x = x - hull->w/2;
+            position->y = y - hull->h/2;
+        }
+        float center_x ()
+        {
+            return position->x + hull->w/2;
+        }
+        float center_y ()
+        {
+            return position->y + hull->h/2;
+        }
     };
     Collection<Character> Characters;
-    Character::Character(entityid_t myEntity) : Component(myEntity), hspeed(0), vspeed(0)
+    Character::Character(entityid_t myEntity) : Component(myEntity), hspeed(0), vspeed(0), myself(false)
     {
-        hull = Hulls.EnforceDependency(myEntity);
+        hull = new Hull(myEntity);
         hull->h = 48;
         hull->w = 32;
-        position = Positions.EnforceDependency(myEntity);
-        sprite = TexturedDrawables.EnforceDependency(myEntity);
+        position = new Position(myEntity);
+        sprite = new TexturedDrawable(myEntity);
         sprite->init("sprites/mychar.png");
-        Characters.List.push_back(this);
+        auto dangle = sprite->position;
+        sprite->position = position;
+        delete dangle;
+        
+        Characters.add(this);
+    }
+    Character::~Character()
+    {
+        delete hull;
+        delete position;
+        delete sprite;
+        Characters.remove(this);
     }
     
     struct BoxDrawable : public Component
     {
         BoxDrawable(entityid_t myEntity);
-        
+        ~BoxDrawable();
         Position * position;
         Hull * hull;
         double xoffset, yoffset;
         
-        SDL_Rect* getShape();
+        SDL_Rect* getShape(float x, float y);
         
         private:
             SDL_Rect shape;
@@ -290,14 +318,20 @@ namespace Sys
     Collection<BoxDrawable> BoxDrawables;
     BoxDrawable::BoxDrawable(entityid_t myEntity) : Component(myEntity)
     {
-        position = Positions.EnforceDependency(myEntity);
-        hull = Hulls.EnforceDependency(myEntity);
-        BoxDrawables.List.push_back(this);
+        position = new Position(myEntity);
+        hull = new Hull(myEntity);
+        BoxDrawables.add(this);
     }
-    SDL_Rect * BoxDrawable::getShape()
+    BoxDrawable::~BoxDrawable()
     {
-        shape = {int(ceil(position->x+hull->xoffset)),
-                 int(ceil(position->y+hull->yoffset)),
+        delete position;
+        delete hull;
+        BoxDrawables.remove(this);
+    }
+    SDL_Rect * BoxDrawable::getShape(float x, float y) // offsets
+    {
+        shape = {int(ceil(position->x+hull->xoffset-x)),
+                 int(ceil(position->y+hull->yoffset-y)),
                  int(round(hull->w)),
                  int(round(hull->h))};
         return &shape;
@@ -545,22 +579,20 @@ namespace Sys
                 
                 /* set up muh functions */
                 int stepsize = 4;
-                
-                std::cout << x << " " << y << "\n";
                 /*
                  *  handle accelerations
                  */
                 
-                float taccel = 2000*delta;
-                float gravity = 1000*delta;
+                float taccel = 1800*delta;
+                float gravity = 900*delta;
                 float max_gravity = 2000;
                 float jumpspeed = -300;
-                float fric_moving = pow(0.1, delta);
+                float fric_moving = pow(0.2, delta);
                 float fric_counter = pow(0.01, delta);
                 float fric_still = pow(0.02, delta);
                 int crawlspeed = 75;
-                int walkspeed = 250;
-                int runspeed = 500;
+                int walkspeed = 170;
+                int runspeed = 300;
                 float struggle = 0.6;
                 
                 int direction = (Input::inputs[Input::RIGHT] - Input::inputs[Input::LEFT]);
@@ -615,7 +647,6 @@ namespace Sys
                     vspeed += gravity;
                     if(vspeed > max_gravity)
                         vspeed = max_gravity;
-                    puts("GRAVITY");
                 }
                 if(jumping)
                     vspeed = jumpspeed;
@@ -648,72 +679,70 @@ namespace Sys
                 if (place_meeting(character, hspeed, vspeed))
                 {
                     puts("rectifying a collision");
-                    // check for up slopes and down sloped ceilings
-                    auto oy = y;
-                    if(place_meeting(character, hspeed, 0))
+                    float mx, my;
+                    std::tie(mx, my) = move_contact(character, hspeed, vspeed);
+                    std::cout << "move_contact-ed " << vector_length(vspeed, hspeed) << " to " << vector_length(mx, my) << "\n";
+                    //if(sqdist(mx, my) > sqdist(vspeed, hspeed))
+                    //    throw;
+                    h_auto -= mx;
+                    v_auto -= my;
+                    
+                    if(sqdist(mx, my) != sqdist(vspeed, hspeed)) // avoid obscure spatial-temporal aliasing bug
                     {
-                        for (int i = stepsize; i <= abs(hspeed)+stepsize; i += stepsize)
-                        {
-                            puts("testing slopes");
-                            if(!place_meeting(character, hspeed, i))
-                            {
-                                y += i;
-                                puts("downceil");
-                                break;
-                            }
-                            else if(!place_meeting(character, hspeed, -i))
-                            {
-                                y -= i;
-                                puts("upslope");
-                                break;
-                            }
-                        }
-                    }
-                    // no slope
-                    //if(y == oy)
-                    {
-                        float mx, my;
-                        std::tie(mx, my) = move_contact(character, hspeed, vspeed);
-                        std::cout << "move_contact-ed " << vector_length(vspeed, hspeed) << " to " << vector_length(mx, my) << "\n";
-                        if(sqdist(mx, my) > sqdist(vspeed, hspeed))
-                            throw;
-                        h_auto -= mx;
-                        v_auto -= my;
-                        //h_auto -= hspeed * dist/vector_length(hspeed, vspeed);
-                        //v_auto -= vspeed * dist/vector_length(hspeed, vspeed);
                         // check for walls
-                        if(sqdist(mx, my) != sqdist(vspeed, hspeed))
+                        if(place_meeting(character, crop1(h_auto), 0))
                         {
-                            if(place_meeting(character, crop1(h_auto), 0))
+                            auto oy = y;
+                            // check for slopes
+                            for (int i = stepsize; i <= abs(h_auto)+stepsize; i += stepsize)
+                            {
+                                puts("testing slopes");
+                                if(!place_meeting(character, h_auto, i))
+                                {
+                                    y += i;
+                                    puts("downceil");
+                                    break;
+                                }
+                                else if(!place_meeting(character, h_auto, -i))
+                                {
+                                    y -= i;
+                                    puts("upslope");
+                                    break;
+                                }
+                            }
+                            // no slopw; wall
+                            if(oy == y)
                             {
                                 puts("w");
                                 hspeed = 0;
                                 h_auto = 0;
                             }
-                            // assume floor otherwise
-                            else
-                            {
-                                puts("f");
-                                vspeed = 0;
-                                v_auto = 0;
-                            }
+                        }
+                        // assume floor otherwise
+                        else
+                        {
+                            puts("f");
+                            vspeed = 0;
+                            v_auto = 0;
                         }
                     }
                 }
                 // we did not collide with something
                 else
                 {
-                    puts("nocol");
                     // we might want to "down" a slope
-                    for (int i = 1; i < abs(hspeed)+stepsize; i += stepsize)
+                    if(vspeed >= 0)
                     {
-                        if(!place_meeting(character, 0, i) and place_meeting(character, 0, i+1))
+                        for (int i = stepsize; i <= abs(h_auto)+stepsize; i += stepsize)
                         {
-                            puts("downslope");
-                            y += i;
-                            vspeed = 0;
-                            v_auto = 0;
-                            break;
+                            if(!place_meeting(character, h_auto, i) and place_meeting(character, h_auto, i+1))
+                            {
+                                puts("downslope");
+                                y += i;
+                                vspeed = 0;
+                                v_auto = 0;
+                                break;
+                            }
                         }
                     }
                 }
@@ -737,24 +766,25 @@ namespace Sys
     }
     namespace Renderers
     {
-        bool TexturedDrawables()
+        bool TexturedDrawables(float x, float y) // topleft corner position
         {
             for(auto drawable : Sys::TexturedDrawables)
             {
-                renderTexture( drawable->sprite, Sys::Renderer, drawable->position->x, drawable->position->y );
+                renderTexture( drawable->sprite, Sys::Renderer, drawable->position->x-x, drawable->position->y-y );
             };
             return false;
         }
-        bool BoxDrawables()
+        bool BoxDrawables(float x, float y)
         {
             for(auto drawable : Sys::BoxDrawables)
             {
                 SDL_SetRenderDrawColor( Sys::Renderer, 255, 255, 255, 255 );
-                SDL_RenderFillRect( Sys::Renderer, drawable->getShape() );
+                SDL_RenderFillRect( Sys::Renderer, drawable->getShape(x, y) );
             };
             return false;
         }
     }
+    float view_x, view_y;
     bool RenderThings()
     {
         // Clear screen
@@ -762,9 +792,18 @@ namespace Sys
         SDL_SetRenderDrawColor( Renderer, 0, 0, 0, 255);
         SDL_RenderFillRect( Renderer, &shape );
         
+        // Come up with center
+        for(auto c : Characters.List)
+        {
+            if(c->myself)
+            {
+                view_x = floor(c->center_x())-Sys::shape.w/2;
+                view_y = floor(c->center_y())-Sys::shape.h/2;
+            }
+        }
         // Draw simple textured drawables
-        Renderers::BoxDrawables();
-        Renderers::TexturedDrawables();
+        Renderers::BoxDrawables(view_x, view_y);
+        Renderers::TexturedDrawables(view_x, view_y);
         
         return false;
     }
@@ -775,40 +814,69 @@ namespace Sys
     }
 }
 
+namespace Maps
+{
+    long width;
+    long height;
+    void load_wallmask(const char * filename)
+    {
+        SDL_Surface * wallmask = IMG_Load(filename);
+        int bpp = wallmask->format->BytesPerPixel;
+        unsigned char r;
+        unsigned char g;
+        unsigned char b;
+        //std::cout << "Loading wallmask from " << filename << "\n";
+        int scale = 4;
+        width  = wallmask->w * scale;
+        height = wallmask->h * scale;
+        
+        for (long y = 0; y < wallmask->h; ++y)
+        {
+            std::cout << "Row " << y << "\n";
+            long rect_x = -1;
+            for (long x = 0; x < wallmask->w; ++x)
+            {
+                //std::cout << "Column " << x << "\n";
+                SDL_GetRGB(*((unsigned char*)(wallmask->pixels)+(x + y*wallmask->w)*bpp), wallmask->format, &r, &g, &b);
+                if(r < 127)
+                {
+                    if(rect_x == -1) // new rect
+                    {
+                        rect_x = x;
+                    }
+                }
+                else
+                {
+                    if(rect_x != -1) // end of rect
+                    {
+                        auto chunk = new Sys::BoxDrawable(Ent::New());
+                        chunk->position->x = scale*rect_x;
+                        chunk->hull    ->w = scale*(x-rect_x);
+                        chunk->position->y = scale*y;
+                        chunk->hull    ->h = scale;
+                        rect_x = -1;
+                    }
+                }
+            }
+            if(rect_x != -1) // end of rect
+            {
+                auto chunk = new Sys::BoxDrawable(Ent::New());
+                chunk->position->x = scale*rect_x;
+                chunk->hull    ->w = scale*(wallmask->w-rect_x);
+                chunk->position->y = scale*y;
+                chunk->hull    ->h = scale;
+            }
+        }
+    }
+}
+
 bool sys_init()
 {
-    new Sys::Character(Ent::New());
-    new Sys::BoxDrawable(Ent::New());
-    new Sys::BoxDrawable(Ent::New());
-    new Sys::BoxDrawable(Ent::New());
-    new Sys::BoxDrawable(Ent::New());
-    new Sys::BoxDrawable(Ent::New());
+    Maps::load_wallmask("wallmask.png");
     
-    auto d = Sys::BoxDrawables.List[0];
-    d->position->x = 0;
-    d->position->y = 120;
-    d->hull->w = 400;
-    d->hull->h = 50;
-    d = Sys::BoxDrawables.List[1];
-    d->position->x = 0+64;
-    d->position->y = 120-4;
-    d->hull->w = 400-64;
-    d->hull->h = 4;
-    d = Sys::BoxDrawables.List[2];
-    d->position->x = 0+64+4;
-    d->position->y = 120-4-4;
-    d->hull->w = 400-64-4;
-    d->hull->h = 4;
-    d = Sys::BoxDrawables.List[3];
-    d->position->x = 0+64+4+4;
-    d->position->y = 120-4-4-4;
-    d->hull->w = 400-64-4-4;
-    d->hull->h = 4;
-    d = Sys::BoxDrawables.List[4];
-    d->position->x = 600;
-    d->position->y = 120;
-    d->hull->w = 400;
-    d->hull->h = 50;
+    auto me = new Sys::Character(Ent::New());
+    me->myself = true;
+    me->center_on(Maps::width/2, Maps::height/2);
     
     Sys::tems.push_back(&Sys::FrameLimit);
     Sys::tems.push_back(&Sys::SDLEvents);
@@ -825,6 +893,9 @@ bool main_init()
         std::cout << "Could not initialize SDL: " << SDL_GetError() << std::endl;
 
     int MAX_X = 800, MAX_Y = 600;
+    
+    Sys::view_x = 0;
+    Sys::view_y = 0;
 
     Sys::MainWindow = SDL_CreateWindow("Benetnasch", 300, 300, MAX_X, MAX_Y, SDL_WINDOW_SHOWN);
     if (Sys::MainWindow == nullptr)
