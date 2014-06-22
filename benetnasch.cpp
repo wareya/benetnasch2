@@ -676,75 +676,87 @@ namespace Sys
                     }
                 }
                 // we collided with something
-                if (place_meeting(character, hspeed, vspeed))
+                int max_bounces = 3;
+                for (int i = max_bounces; i > 0; --i)
                 {
-                    puts("rectifying a collision");
-                    float mx, my;
-                    std::tie(mx, my) = move_contact(character, hspeed, vspeed);
-                    std::cout << "move_contact-ed " << vector_length(vspeed, hspeed) << " to " << vector_length(mx, my) << "\n";
-                    //if(sqdist(mx, my) > sqdist(vspeed, hspeed))
-                    //    throw;
-                    h_auto -= mx;
-                    v_auto -= my;
-                    
-                    if(sqdist(mx, my) != sqdist(vspeed, hspeed)) // avoid obscure spatial-temporal aliasing bug
+                    if (place_meeting(character, hspeed, vspeed))
                     {
-                        // check for walls
-                        if(place_meeting(character, crop1(h_auto), 0))
+                        puts("rectifying a collision");
+                        float mx, my;
+                        std::tie(mx, my) = move_contact(character, hspeed, vspeed);
+                        std::cout << "move_contact-ed " << vector_length(vspeed, hspeed) << " to " << vector_length(mx, my) << "\n";
+                        //if(sqdist(mx, my) > sqdist(vspeed, hspeed))
+                        //    throw;
+                        h_auto -= mx;
+                        v_auto -= my;
+                        
+                        if(sqdist(mx, my) != sqdist(vspeed, hspeed)) // avoid obscure spatial-temporal aliasing bug
                         {
-                            auto oy = y;
-                            // check for slopes
-                            for (int i = stepsize; i <= abs(h_auto)+stepsize; i += stepsize)
+                            // check for walls
+                            if(place_meeting(character, crop1(h_auto), 0))
                             {
-                                puts("testing slopes");
-                                if(!place_meeting(character, h_auto, i))
+                                auto oy = y;
+                                // check for slopes
+                                for (int i = stepsize; i <= abs(h_auto)+stepsize; i += stepsize)
                                 {
-                                    y += i;
-                                    puts("downceil");
-                                    break;
+                                    puts("testing slopes");
+                                    if(!place_meeting(character, h_auto, i))
+                                    {
+                                        y += i;
+                                        puts("downceil");
+                                        break;
+                                    }
+                                    else if(!place_meeting(character, h_auto, -i))
+                                    {
+                                        y -= i;
+                                        puts("upslope");
+                                        break;
+                                    }
                                 }
-                                else if(!place_meeting(character, h_auto, -i))
+                                // no slopw; wall
+                                if(oy == y)
                                 {
-                                    y -= i;
-                                    puts("upslope");
-                                    break;
+                                    puts("w");
+                                    hspeed = 0;
+                                    h_auto = 0;
                                 }
                             }
-                            // no slopw; wall
-                            if(oy == y)
+                            // assume floor otherwise
+                            else
                             {
-                                puts("w");
-                                hspeed = 0;
-                                h_auto = 0;
-                            }
-                        }
-                        // assume floor otherwise
-                        else
-                        {
-                            puts("f");
-                            vspeed = 0;
-                            v_auto = 0;
-                        }
-                    }
-                }
-                // we did not collide with something
-                else
-                {
-                    // we might want to "down" a slope
-                    if(vspeed >= 0)
-                    {
-                        for (int i = stepsize; i <= abs(h_auto)+stepsize; i += stepsize)
-                        {
-                            if(!place_meeting(character, h_auto, i) and place_meeting(character, h_auto, i+1))
-                            {
-                                puts("downslope");
-                                y += i;
+                                puts("f");
                                 vspeed = 0;
                                 v_auto = 0;
-                                break;
                             }
                         }
+                        else
+                            break;
                     }
+                    // we did not collide with something
+                    else
+                    {
+                        // we might want to "down" a slope
+                        bool sloped = false;
+                        if(vspeed >= 0)
+                        {
+                            for (int i = stepsize; i <= abs(h_auto)+stepsize; i += stepsize)
+                            {
+                                if(!place_meeting(character, h_auto, i) and place_meeting(character, h_auto, i+1))
+                                {
+                                    sloped = true;
+                                    puts("downslope");
+                                    y += i;
+                                    vspeed = 0;
+                                    v_auto = 0;
+                                    break;
+                                }
+                            }
+                        }
+                        if(!sloped) // whole bounce with no collisions to do
+                            break;
+                    }
+                    if(v_auto == 0 and h_auto == 0)
+                        break;
                 }
                 
                 x += h_auto;
