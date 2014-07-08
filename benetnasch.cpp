@@ -584,7 +584,7 @@ namespace Sys
                  */
                 
                 float taccel = 1800*delta;
-                float gravity = 900*delta;
+                float gravity = 800*delta;
                 float max_gravity = 2000;
                 float jumpspeed = -300;
                 float fric_moving = pow(0.2, delta);
@@ -661,7 +661,7 @@ namespace Sys
                 auto v_auto = vspeed;
                 
                 /* movement solver starts here */
-                // we're in the wallmask
+                // we're in the wallmask; try to get out of it if it's really easy
                 if (place_meeting(character, 0, 0))
                 {
                     puts("woaaAAAHHHh we're in the wallmask 1!");
@@ -675,45 +675,46 @@ namespace Sys
                         }
                     }
                 }
-                // we collided with something
                 int max_bounces = 3;
                 for (int i = max_bounces; i > 0; --i)
                 {
-                    if (place_meeting(character, hspeed, vspeed))
+                    if (place_meeting(character, hspeed, vspeed)) // we collided with something
                     {
                         puts("rectifying a collision");
                         float mx, my;
+                        // move snugly to whatever we might've hit, and store the x and y deltas from that motion
                         std::tie(mx, my) = move_contact(character, hspeed, vspeed);
                         std::cout << "move_contact-ed " << vector_length(vspeed, hspeed) << " to " << vector_length(mx, my) << "\n";
-                        //if(sqdist(mx, my) > sqdist(vspeed, hspeed))
-                        //    throw;
+                        
+                        // subtract the motion we've already done this from from this frame's automatic motion
                         h_auto -= mx;
                         v_auto -= my;
                         
-                        if(sqdist(mx, my) != sqdist(vspeed, hspeed)) // avoid obscure spatial-temporal aliasing bug
+                        if(sqdist(mx, my) != sqdist(vspeed, hspeed)) // avoid obscure spatial-temporal aliasing bug (we hit a wall *perfectly* snug)
                         {
-                            // check for walls
+                            // check whether we contacted walls/slopes or not
                             if(place_meeting(character, crop1(h_auto), 0))
                             {
+                                // store original y before sloping
                                 auto oy = y;
                                 // check for slopes
-                                for (int i = stepsize; i <= abs(h_auto)+stepsize; i += stepsize)
+                                for (int i = stepsize; i <= abs(h_auto)+stepsize; i += stepsize) // don't climb stairs that are too steep, even if we're moving fast; handle appropriately steep slopes appropriately without requiring more bounces -- this might actually have a problem the way it currently is, I might rewrite it
                                 {
                                     puts("testing slopes");
-                                    if(!place_meeting(character, h_auto, i))
+                                    if(!place_meeting(character, h_auto, i)) // slope down a sloped ceiling step
                                     {
                                         y += i;
                                         puts("downceil");
                                         break;
                                     }
-                                    else if(!place_meeting(character, h_auto, -i))
+                                    else if(!place_meeting(character, h_auto, -i)) // slope up a normal ground slope
                                     {
                                         y -= i;
                                         puts("upslope");
                                         break;
                                     }
                                 }
-                                // no slopw; wall
+                                // no slope; it's a wall
                                 if(oy == y)
                                 {
                                     puts("w");
@@ -737,7 +738,8 @@ namespace Sys
                     {
                         // we might want to "down" a slope
                         bool sloped = false;
-                        if(vspeed >= 0)
+                        // only if we're walking on the ground
+                        if(vspeed == 0)
                         {
                             for (int i = stepsize; i <= abs(h_auto)+stepsize; i += stepsize)
                             {
@@ -755,7 +757,7 @@ namespace Sys
                         if(!sloped) // whole bounce with no collisions to do
                             break;
                     }
-                    if(v_auto == 0 and h_auto == 0)
+                    if(v_auto == 0 and h_auto == 0) //
                         break;
                 }
                 

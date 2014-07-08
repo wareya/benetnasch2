@@ -15,8 +15,8 @@ CType lerp(CType a, CType b, CType t) // a to b, t from 0-1
     return b*t + a*(1.0-t);
 }
 
-aabb_overlap (float x1, float y1, float x2, float y2,// coordinate pair for first box
-              float x3, float y3, float x4, float y4)// second box
+bool aabb_overlap (float x1, float y1, float x2, float y2,// coordinate pair for first box
+                   float x3, float y3, float x4, float y4)// second box
 {
     if(x1 > x2)
         std::swap(x1, x2);
