@@ -380,22 +380,13 @@ namespace Sys
         Time::delta = Time::delta_us * Time::scale;
         Time::simstart_us = halttime;
         Time::frames.push_back( Time::simstart_us );
+        Time::sim = TimeSpent;
+        Time::halt = halttime-prehalttime;
         
         // Throw away old timings
         while ( Time::frames.size() > Time::Framesnum )
             Time::frames.erase( Time::frames.begin() );
         
-        if(false) // debug
-        {
-            std::cout << std::fixed << std::setprecision(4)
-                      <<"\rfps "    << Time::scale / ((Time::frames.back() - Time::frames.front())/(Time::frames.size()-1))
-                      << " sim "    << std::setprecision(2)<< TimeSpent / 1000
-                      //<< " bad "    << (Time::last - Time::simstart_us) * 1000
-                      //<< " ask "    << std::setprecision(3) << TimeWaitS
-                      << " halt "   << (halttime-prehalttime) / 1000
-                      //<< " miss "   << std::setprecision(0) << Time::deviance * 1000
-                      << " dev "    << Time::deviance << "\n";
-        }
         return false;
     }
     bool SDLEvents()
@@ -491,7 +482,7 @@ namespace Sys
             auto which = place_meeting_which(x+(xsign < 0 ? width : 0)     , y+(ysign < 0 ? height : 0)     ,
                                              x+(xsign > 0 ? width : 0)+hvec, y+(ysign > 0 ? height : 0)+vvec,
                                              hvec, vvec);
-            std::cout << which.size() << "\n";
+            //std::cout << which.size() << "\n";
             
             if(which.size() == 0)
             {
@@ -664,13 +655,13 @@ namespace Sys
                 // we're in the wallmask; try to get out of it if it's really easy
                 if (place_meeting(character, 0, 0))
                 {
-                    puts("woaaAAAHHHh we're in the wallmask 1!");
+                    //puts("woaaAAAHHHh we're in the wallmask 1!");
                     for (int i = 1; i < stepsize; i += 1)
                     {
                         if(!place_meeting(character, 0, -i))
                         {
                             y -= i;
-                            puts("eject up");
+                            //puts("eject up");
                             break;
                         }
                     }
@@ -680,11 +671,11 @@ namespace Sys
                 {
                     if (place_meeting(character, hspeed, vspeed)) // we collided with something
                     {
-                        puts("rectifying a collision");
+                        //puts("rectifying a collision");
                         float mx, my;
                         // move snugly to whatever we might've hit, and store the x and y deltas from that motion
                         std::tie(mx, my) = move_contact(character, hspeed, vspeed);
-                        std::cout << "move_contact-ed " << vector_length(vspeed, hspeed) << " to " << vector_length(mx, my) << "\n";
+                        //std::cout << "move_contact-ed " << vector_length(vspeed, hspeed) << " to " << vector_length(mx, my) << "\n";
                         
                         // subtract the motion we've already done this from from this frame's automatic motion
                         h_auto -= mx;
@@ -700,24 +691,24 @@ namespace Sys
                                 // check for slopes
                                 for (int i = stepsize; i <= abs(h_auto)+stepsize; i += stepsize) // don't climb stairs that are too steep, even if we're moving fast; handle appropriately steep slopes appropriately without requiring more bounces -- this might actually have a problem the way it currently is, I might rewrite it
                                 {
-                                    puts("testing slopes");
+                                    //puts("testing slopes");
                                     if(!place_meeting(character, h_auto, i)) // slope down a sloped ceiling step
                                     {
                                         y += i;
-                                        puts("downceil");
+                                        //puts("downceil");
                                         break;
                                     }
                                     else if(!place_meeting(character, h_auto, -i)) // slope up a normal ground slope
                                     {
                                         y -= i;
-                                        puts("upslope");
+                                        //puts("upslope");
                                         break;
                                     }
                                 }
                                 // no slope; it's a wall
                                 if(oy == y)
                                 {
-                                    puts("w");
+                                    //puts("w");
                                     hspeed = 0;
                                     h_auto = 0;
                                 }
@@ -725,7 +716,7 @@ namespace Sys
                             // assume floor otherwise
                             else
                             {
-                                puts("f");
+                                //puts("f");
                                 vspeed = 0;
                                 v_auto = 0;
                             }
@@ -746,7 +737,7 @@ namespace Sys
                                 if(!place_meeting(character, h_auto, i) and place_meeting(character, h_auto, i+1))
                                 {
                                     sloped = true;
-                                    puts("downslope");
+                                    //puts("downslope");
                                     y += i;
                                     vspeed = 0;
                                     v_auto = 0;
@@ -763,12 +754,12 @@ namespace Sys
                 
                 x += h_auto;
                 y += v_auto;
-                if (place_meeting(character, 0, 0))
-                    puts("woaaAAAHHHh we're in the wallmask 2!");
+                //if (place_meeting(character, 0, 0))
+                    //puts("woaaAAAHHHh we're in the wallmask 2!");
                 
                 hspeed /= delta;
                 vspeed /= delta;
-                puts("end frame");
+                //puts("end frame");
             };
             return false;
         }
@@ -790,12 +781,29 @@ namespace Sys
         }
         bool BoxDrawables(float x, float y)
         {
+            SDL_SetRenderDrawColor( Sys::Renderer, 255, 255, 255, 255 );
             for(auto drawable : Sys::BoxDrawables)
             {
-                SDL_SetRenderDrawColor( Sys::Renderer, 255, 255, 255, 255 );
                 SDL_RenderFillRect( Sys::Renderer, drawable->getShape(x, y) );
             };
             return false;
+        }
+        bfont * afont;
+        bool ScreenText(float x, float y)
+        {
+            //sprintf("%d", );
+            renderText(0, 0,
+                       (std::string("FPS:  ")+std::to_string(Time::scale / ((Time::frames.back() - Time::frames.front())/(Time::frames.size()-1)))).data(),
+                       Sys::Renderers::afont);
+            renderText(0, 13*1,
+                       (std::string("Sim.: ")+std::to_string(Time::sim / 1000)).data(),
+                       Sys::Renderers::afont);
+            renderText(0, 13*2,
+                       (std::string("Halt: ")+std::to_string(Time::halt / 1000)).data(),
+                       Sys::Renderers::afont);
+            renderText(0, 13*3,
+                       (std::string("Dev:  ")+std::to_string(Time::deviance)).data(),
+                       Sys::Renderers::afont);
         }
     }
     float view_x, view_y;
@@ -818,6 +826,7 @@ namespace Sys
         // Draw simple textured drawables
         Renderers::BoxDrawables(view_x, view_y);
         Renderers::TexturedDrawables(view_x, view_y);
+        Renderers::ScreenText(view_x, view_y);
         
         return false;
     }
@@ -887,6 +896,8 @@ namespace Maps
 bool sys_init()
 {
     Maps::load_wallmask("wallmask.png");
+    
+    Sys::Renderers::afont = new bfont(Sys::Renderer, std::string("The Strider.bmp"));
     
     auto me = new Sys::Character(Ent::New());
     me->myself = true;
