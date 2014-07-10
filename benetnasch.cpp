@@ -94,11 +94,14 @@ namespace Input
         JUMP,
         LEFT,
         RIGHT,
-        DOWN
+        DOWN,
+        SHOOT
     };
     bool inputs[256] = { }; 
     bool last_inputs[256] = { }; 
     signed char scrolls[4];
+    int mx;
+    int my;
     const Uint8 * corestate;
     
     struct keybinding
@@ -109,7 +112,7 @@ namespace Input
     std::vector<keybinding> keybindings;
     struct mousebinding
     {
-        SDL_Scancode button;
+        uint32_t button;
         unsigned char input_index;
     };
     std::vector<mousebinding> mousebindings;
@@ -121,10 +124,13 @@ namespace Input
         keybindings.push_back({SDL_SCANCODE_W, LEFT});
         keybindings.push_back({SDL_SCANCODE_D, DOWN});
         keybindings.push_back({SDL_SCANCODE_F, RIGHT});
+        
+        mousebindings.push_back({SDL_BUTTON_LEFT, SHOOT});
     }
     
     void Update()
     {
+        auto mousebitmask = SDL_GetMouseState(&mx, &my);
         for (short i = 0; i < 256; i++)
         {
             last_inputs[i] = inputs[i];
@@ -137,7 +143,7 @@ namespace Input
         }
         for (auto bind : mousebindings)
         {
-            if(corestate[bind.button])
+            if(mousebitmask & bind.button)
                 inputs[bind.input_index] = true;
         }
     }
@@ -302,6 +308,32 @@ namespace Sys
         Characters.remove(this);
     }
     
+    struct Bullet : public Component
+    {
+        Bullet(entityid_t myEntity);
+        ~Bullet();
+        Position * position;
+        Position * lastposition;
+        float hspeed;
+        float vspeed;
+        float damage;
+        float life;
+    };
+    Collection<Bullet> Bullets;
+    Bullet::Bullet(entityid_t myEntity) : Component(myEntity), hspeed(0), vspeed(0), damage(0), life(1)
+    {
+        position = new Position(myEntity);
+        lastposition = new Position(myEntity);
+        Bullets.add(this);
+    }
+    Bullet::~Bullet()
+    {
+        delete position;
+        delete lastposition;
+        Bullets.remove(this);
+    }
+    
+    
     struct BoxDrawable : public Component
     {
         BoxDrawable(entityid_t myEntity);
@@ -405,6 +437,7 @@ namespace Sys
         Input::Update();
         return false;
     }
+    float view_x, view_y;
     namespace Physicsers
     {
         /* not systems */
@@ -555,6 +588,8 @@ namespace Sys
             }
         }
         /* systems */
+        double delta = 1/Time::Framerate;
+        float gravity = 800*delta;
         bool MoveCharacters()
         {
             for(auto character : Sys::Characters)
@@ -566,7 +601,6 @@ namespace Sys
                 double &y = character->position->y;
                 double &hspeed = character->hspeed;
                 double &vspeed = character->vspeed;
-                double delta = 1/Time::Framerate;
                 
                 /* set up muh functions */
                 int stepsize = 4;
@@ -575,7 +609,6 @@ namespace Sys
                  */
                 
                 float taccel = 1800*delta;
-                float gravity = 800*delta;
                 float max_gravity = 2000;
                 float jumpspeed = -300;
                 float fric_moving = pow(0.2, delta);
@@ -588,6 +621,22 @@ namespace Sys
                 
                 int direction = (Input::inputs[Input::RIGHT] - Input::inputs[Input::LEFT]);
                 int jumping = (Input::inputs[Input::JUMP] & !Input::last_inputs[Input::JUMP]);
+                
+                // handle weapon things
+                int shooting = (Input::inputs[Input::SHOOT] and not Input::last_inputs[Input::SHOOT]);
+                if(shooting)
+                {
+                    auto b = new Bullet(Ent::New());
+                    b->position->x = character->center_x();
+                    b->position->y = character->center_y();
+                    *b->lastposition = *b->position;
+                    
+                    b->hspeed = hspeed;
+                    auto shotspeed = 800;
+                    auto dir = deg2rad(point_direction(character->center_x()-Sys::view_x, character->center_y()-Sys::view_y, Input::mx, Input::my));
+                    b->hspeed += cos(dir) * shotspeed;
+                    b->vspeed += -sin(dir) * shotspeed;
+                }
                 
                 // If we're moving too slowly, our acceleration should be dampened
                 if (direction == int(sign(hspeed)) or hspeed == 0)
@@ -763,15 +812,45 @@ namespace Sys
             };
             return false;
         }
+        bool MoveBullets()
+        {
+            std::vector<Bullet *> marked_for_removal;
+            for(auto bullet : Sys::Bullets)
+            {
+                auto &x = bullet->position->x;
+                auto &y = bullet->position->y;
+                
+                *bullet->lastposition = *bullet->position;
+                
+                auto &h = bullet->hspeed;
+                auto &v = bullet->vspeed;
+                
+                v += gravity;
+                
+                x += h * delta;
+                y += v * delta;
+                
+                bullet->life -= delta;
+                
+                if(bullet->life < 0)
+                {
+                    marked_for_removal.push_back(bullet);
+                }
+            }
+            for(auto bullet : marked_for_removal)
+                delete bullet;
+            return false;
+        }
     }
     bool Physics()
     {
         Physicsers::MoveCharacters();
+        Physicsers::MoveBullets();
         return false;
     }
     namespace Renderers
     {
-        bool TexturedDrawables(float x, float y) // topleft corner position
+        bool DrawTextured(float x, float y) // topleft corner position
         {
             for(auto drawable : Sys::TexturedDrawables)
             {
@@ -779,7 +858,15 @@ namespace Sys
             };
             return false;
         }
-        bool BoxDrawables(float x, float y)
+        bool DrawBullets(float x, float y) // topleft corner position
+        {
+            for(auto bullet : Sys::Bullets)
+            {
+                SDL_RenderDrawLine(Sys::Renderer, bullet->position->x-x, bullet->position->y-y, bullet->lastposition->x-x, bullet->lastposition->y-y);
+            };
+            return false;
+        }
+        bool DrawBoxes(float x, float y)
         {
             SDL_SetRenderDrawColor( Sys::Renderer, 255, 255, 255, 255 );
             for(auto drawable : Sys::BoxDrawables)
@@ -789,14 +876,14 @@ namespace Sys
             return false;
         }
         bfont * afont;
-        bool ScreenText(float x, float y)
+        bool DrawScreenText(float x, float y)
         {
             //sprintf("%d", );
             renderText(0, 0,
                        (std::string("FPS:  ")+std::to_string(Time::scale / ((Time::frames.back() - Time::frames.front())/(Time::frames.size()-1)))).data(),
                        Sys::Renderers::afont);
             renderText(0, 13*1,
-                       (std::string("Sim.: ")+std::to_string(Time::sim / 1000)).data(),
+                       (std::string("Sim:  ")+std::to_string(Time::sim / 1000)).data(),
                        Sys::Renderers::afont);
             renderText(0, 13*2,
                        (std::string("Halt: ")+std::to_string(Time::halt / 1000)).data(),
@@ -804,9 +891,15 @@ namespace Sys
             renderText(0, 13*3,
                        (std::string("Dev:  ")+std::to_string(Time::deviance)).data(),
                        Sys::Renderers::afont);
+            renderText(0, 13*4,
+                       (std::string("Chunks:")+std::to_string(Sys::BoxDrawables.List.size())).data(),
+                       Sys::Renderers::afont);
+            renderText(0, 13*5,
+                       (std::string("Bullets:")+std::to_string(Sys::Bullets.List.size())).data(),
+                       Sys::Renderers::afont);
+            return false;
         }
     }
-    float view_x, view_y;
     bool RenderThings()
     {
         // Clear screen
@@ -824,9 +917,10 @@ namespace Sys
             }
         }
         // Draw simple textured drawables
-        Renderers::BoxDrawables(view_x, view_y);
-        Renderers::TexturedDrawables(view_x, view_y);
-        Renderers::ScreenText(view_x, view_y);
+        Renderers::DrawBoxes(view_x, view_y);
+        Renderers::DrawTextured(view_x, view_y);
+        Renderers::DrawBullets(view_x, view_y);
+        Renderers::DrawScreenText(view_x, view_y);
         
         return false;
     }

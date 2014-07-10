@@ -72,4 +72,5 @@ int renderText(int x, int y, const char * string, bfont * muhfont)
 	{
 		renderLetter(x+i*muhfont->w, y, string[i], muhfont);
 	}
+    return 0;
 }
