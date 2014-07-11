@@ -260,6 +260,33 @@ namespace Sys
         sprite = loadTexture( sarg, Sys::Renderer );
         return sprite != nullptr;
     }
+    // background component
+    struct BackgroundDrawable : public Component
+    {
+        BackgroundDrawable(entityid_t myEntity);
+        ~BackgroundDrawable();
+        Position * position;
+        SDL_Texture * sprite;
+        bool init(const char * sarg);
+    };
+    Collection<BackgroundDrawable> BackgroundDrawables;
+    BackgroundDrawable::BackgroundDrawable(entityid_t myEntity) : Component(myEntity), sprite(NULL)
+    {
+        position = new Position(myEntity);
+        BackgroundDrawables.add(this);
+    }
+    BackgroundDrawable::~BackgroundDrawable()
+    {
+        delete position;
+        SDL_DestroyTexture(sprite);
+        
+        BackgroundDrawables.remove(this);
+    }
+    bool BackgroundDrawable::init(const char * sarg)
+    {
+        sprite = loadTexture( sarg, Sys::Renderer );
+        return sprite != nullptr;
+    }
     // Character component
     struct Character : public Component
     {
@@ -858,6 +885,14 @@ namespace Sys
             };
             return false;
         }
+        bool DrawBackground(float x, float y) // topleft corner position
+        {
+            for(auto drawable : Sys::BackgroundDrawables)
+            {
+                renderTexture( drawable->sprite, Sys::Renderer, drawable->position->x-x, drawable->position->y-y, 4 );
+            };
+            return false;
+        }
         bool DrawBullets(float x, float y) // topleft corner position
         {
             for(auto bullet : Sys::Bullets)
@@ -918,6 +953,7 @@ namespace Sys
         }
         // Draw simple textured drawables
         Renderers::DrawBoxes(view_x, view_y);
+        Renderers::DrawBackground(view_x, view_y);
         Renderers::DrawTextured(view_x, view_y);
         Renderers::DrawBullets(view_x, view_y);
         Renderers::DrawScreenText(view_x, view_y);
@@ -935,6 +971,11 @@ namespace Maps
 {
     long width;
     long height;
+    void load_background(const char * filename)
+    {
+        auto background = new Sys::BackgroundDrawable(Ent::New());
+        background->init(filename);
+    }
     void load_wallmask(const char * filename)
     {
         SDL_Surface * wallmask = IMG_Load(filename);
@@ -990,6 +1031,7 @@ namespace Maps
 bool sys_init()
 {
     Maps::load_wallmask("wallmask.png");
+    Maps::load_background("background.png");
     
     Sys::Renderers::afont = new bfont(Sys::Renderer, std::string("The Strider.bmp"));
     

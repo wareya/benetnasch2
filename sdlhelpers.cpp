@@ -8,6 +8,15 @@ void renderTexture( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, int 
 	dst.h = h;
 	SDL_RenderCopy( renderer, tex, NULL, &dst );
 }
+
+void renderTexture( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, int scale )
+{
+	int w, h;
+	SDL_QueryTexture( tex, NULL, NULL, &w, &h );
+	w *= scale;
+	h *= scale;
+	renderTexture( tex, renderer, x, y, w, h );
+}
 void renderTexture( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y )
 {
 	int w, h;
