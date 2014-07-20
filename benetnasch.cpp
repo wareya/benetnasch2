@@ -952,7 +952,7 @@ namespace Sys
             }
         }
         // Draw simple textured drawables
-        Renderers::DrawBoxes(view_x, view_y);
+        //Renderers::DrawBoxes(view_x, view_y);
         Renderers::DrawBackground(view_x, view_y);
         Renderers::DrawTextured(view_x, view_y);
         Renderers::DrawBullets(view_x, view_y);
@@ -979,6 +979,10 @@ namespace Maps
     void load_wallmask(const char * filename)
     {
         SDL_Surface * wallmask = IMG_Load(filename);
+        if(!wallmask) {
+            printf("IMG_Load: %s\n", IMG_GetError());
+            // handle error
+        }
         int bpp = wallmask->format->BytesPerPixel;
         unsigned char r;
         unsigned char g;
@@ -1061,7 +1065,7 @@ bool main_init()
     Sys::MainWindow = SDL_CreateWindow("Benetnasch", 300, 300, MAX_X, MAX_Y, SDL_WINDOW_SHOWN);
     if (Sys::MainWindow == nullptr)
         std::cout << "Could not create an SDL window: " << SDL_GetError() << std::endl;
-    Sys::Renderer = SDL_CreateRenderer(Sys::MainWindow, -1, SDL_RENDERER_TARGETTEXTURE);
+    Sys::Renderer = SDL_CreateRenderer(Sys::MainWindow, -1, 0);
     if (Sys::Renderer == nullptr)
         std::cout << "Could not create an SDL renderer: " << SDL_GetError() << std::endl;
     
