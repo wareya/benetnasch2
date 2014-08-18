@@ -407,6 +407,7 @@ namespace Sys
         if( Time::dostart )
         {
             SDL_Delay(1000.0/Time::Framerate);
+            TimeSpent = 0;
             Time::dostart = false;
             Time::deviance = 0;
             halttime = Time::get_us();
@@ -417,11 +418,17 @@ namespace Sys
             // check time between end of last frame limit delay and current code
             TimeSpent = Time::get_us() - Time::simstart_us;
             // calculate desired amount to wait
+        	#ifdef B_FRAMELIMIT_CHEAP
+           	TimeWaitS = 1000.0 / Time::Framerate;
+            #else
             TimeWaitS = maximum(0.0, (1000.0 / Time::Framerate) - TimeSpent/1000.0 - Time::deviance);
-            
+            #endif
             // store time for delay deviance check
             prehalttime = Time::get_us();
-            SDL_Delay(round(TimeWaitS));
+            
+        	#ifndef B_FRAMELIMIT_DISABLE
+	        SDL_Delay(round(TimeWaitS));
+	        #endif
             
             // measure current time directly after frame limit delay
             halttime = Time::get_us();
@@ -435,15 +442,15 @@ namespace Sys
         }
         // push timings to buffer
         Time::last_us = Time::simstart_us;
-        Time::delta_us = Time::simstart_us - Time::last_us;
-        Time::delta = Time::delta_us * Time::scale;
         Time::simstart_us = halttime;
+        Time::delta_us = Time::simstart_us - Time::last_us;
+        Time::delta = Time::delta_us / Time::scale;
         Time::frames.push_back( Time::simstart_us );
         Time::sim = TimeSpent;
         Time::halt = halttime-prehalttime;
         
         // Throw away old timings
-        while ( Time::frames.size() > Time::Framesnum )
+        while (Time::frames.size() > 125)
             Time::frames.erase( Time::frames.begin() );
         
         return false;
@@ -616,7 +623,6 @@ namespace Sys
         }
         /* systems */
         double delta = 1/Time::Framerate;
-        float gravity = 800*delta;
         bool MoveCharacters()
         {
             for(auto character : Sys::Characters)
@@ -635,7 +641,8 @@ namespace Sys
                  *  handle accelerations
                  */
                 
-                float taccel = 1800*delta;
+                float taccel = 1000*delta;
+		        float gravity = 800*delta;
                 float max_gravity = 2000;
                 float jumpspeed = -300;
                 float fric_moving = pow(0.2, delta);
@@ -841,6 +848,7 @@ namespace Sys
         }
         bool MoveBullets()
         {
+		    float gravity = 800*delta;
             std::vector<Bullet *> marked_for_removal;
             for(auto bullet : Sys::Bullets)
             {
@@ -871,6 +879,12 @@ namespace Sys
     }
     bool Physics()
     {
+    	Physicsers::delta = Time::delta;
+    	if(Physicsers::delta > 1)
+    		Physicsers::delta = 1.0;
+    	if(Physicsers::delta < 1.0/1000)
+    		Physicsers::delta = 1.0/1000;
+    	
         Physicsers::MoveCharacters();
         Physicsers::MoveBullets();
         return false;
@@ -917,6 +931,7 @@ namespace Sys
             renderText(0, 0,
                        (std::string("FPS:  ")+std::to_string(Time::scale / ((Time::frames.back() - Time::frames.front())/(Time::frames.size()-1)))).data(),
                        Sys::Renderers::afont);
+        	#ifndef B_DEBUG_FRAMESONLY
             renderText(0, 13*1,
                        (std::string("Sim:  ")+std::to_string(Time::sim / 1000)).data(),
                        Sys::Renderers::afont);
@@ -932,11 +947,23 @@ namespace Sys
             renderText(0, 13*5,
                        (std::string("Bullets:")+std::to_string(Sys::Bullets.List.size())).data(),
                        Sys::Renderers::afont);
+            for(auto c : Sys::Characters)
+            {
+		        renderText(0, 13*6,
+		                   (std::string("x, y:   ")+std::to_string(c->position->x)+std::string(" ")+std::to_string(c->position->y)).data(),
+		                   Sys::Renderers::afont);
+		        break;
+            }
+            renderText(0, 13*7,
+                       (std::string("Delta:  ")+std::to_string(Physicsers::delta)).data(),
+                       Sys::Renderers::afont);
+        	#endif
             return false;
         }
     }
     bool RenderThings()
     {
+    	#ifndef B_DEBUG_COREFRAMES
         // Clear screen
         // Cheap clear; use SDL_RenderClear() instead of SDL_RenderFillRect() if there are problems
         SDL_SetRenderDrawColor( Renderer, 0, 0, 0, 255);
@@ -952,10 +979,11 @@ namespace Sys
             }
         }
         // Draw simple textured drawables
-        //Renderers::DrawBoxes(view_x, view_y);
+        /*Renderers::DrawBoxes(view_x, view_y);*/
         Renderers::DrawBackground(view_x, view_y);
         Renderers::DrawTextured(view_x, view_y);
         Renderers::DrawBullets(view_x, view_y);
+        #endif
         Renderers::DrawScreenText(view_x, view_y);
         
         return false;
@@ -1045,7 +1073,9 @@ bool sys_init()
     
     Sys::tems.push_back(&Sys::FrameLimit);
     Sys::tems.push_back(&Sys::SDLEvents);
+    #ifndef B_DEBUG_COREFRAMES
     Sys::tems.push_back(&Sys::Physics);
+    #endif
     Sys::tems.push_back(&Sys::RenderThings);
     Sys::tems.push_back(&Sys::PresentScreen);
     
