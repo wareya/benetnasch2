@@ -36,6 +36,8 @@ elif [ "$1" == "-t" ]; then
     cmd="$cmd $tflags"
 fi
 
+echo $cmd
+
 run='./a.exe'
 
 eval $cmd

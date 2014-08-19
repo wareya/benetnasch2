@@ -491,7 +491,7 @@ namespace Sys
             }
             return collided;
         }
-        std::vector<BoxDrawable*> place_meeting_which (float x1, float y1, float x2, float y2, float x, float y)
+        std::vector<BoxDrawable*> place_meeting_which (float x1, float y1, float x2, float y2)
         {
             std::vector<BoxDrawable*> overlaps;
             for(auto wallchunk : Sys::BoxDrawables)
@@ -500,6 +500,21 @@ namespace Sys
                                 wallchunk->position->x+wallchunk->hull->w, wallchunk->position->y+wallchunk->hull->h,
                                 x1, y1,
                                 x2, y2))
+                {
+                    overlaps.push_back(wallchunk);
+                }
+            }
+            return overlaps;
+        }
+        std::vector<BoxDrawable*> line_meeting_which (float x1, float y1, float x2, float y2)
+        {
+            std::vector<BoxDrawable*> overlaps;
+            for(auto wallchunk : place_meeting_which(x1, y1, x2, y2))
+            {
+                if(line_aabb_overlap(x1, y1, x2, y2,
+                					 wallchunk->position->x                   , wallchunk->position->y,
+                                	 wallchunk->position->x+wallchunk->hull->w, wallchunk->position->y+wallchunk->hull->h
+                                	 ))
                 {
                     overlaps.push_back(wallchunk);
                 }
@@ -547,8 +562,7 @@ namespace Sys
             
             // make a motion bounding rect and include any collision rect that overlaps it
             auto which = place_meeting_which(x+(xsign < 0 ? width : 0)     , y+(ysign < 0 ? height : 0)     ,
-                                             x+(xsign > 0 ? width : 0)+hvec, y+(ysign > 0 ? height : 0)+vvec,
-                                             hvec, vvec);
+                                             x+(xsign > 0 ? width : 0)+hvec, y+(ysign > 0 ? height : 0)+vvec);
             //std::cout << which.size() << "\n";
             
             if(which.size() == 0)
@@ -573,7 +587,6 @@ namespace Sys
                 // loop through each box to eject from and pick the one with the furthest ejection
                 for(auto box : which) // this WILL run at least once
                 {
-                    // not actually used for anything ignore /s
                     auto eject_x = x;
                     auto eject_y = y;
                     
@@ -867,7 +880,7 @@ namespace Sys
                 
                 bullet->life -= delta;
                 
-                if(bullet->life < 0)
+                if(bullet->life < 0 or line_meeting_which(bullet->lastposition->x, bullet->lastposition->y, x, y).size()>0)
                 {
                     marked_for_removal.push_back(bullet);
                 }
@@ -1111,57 +1124,9 @@ bool main_init()
 #ifdef TESTS
 int main(int argc, char *argv[])
 {
-    new Sys::Character(Ent::New());
-    /* Character
-     * x: 0
-     * y: 0
-     * w: 32
-     * h: 48
-     */
-    new Sys::BoxDrawable(Ent::New());
-    /* BoxDrawable
-     * x: 40
-     * y: 0
-     * w: 10
-     * h: 48
-     */
-    auto d = Sys::BoxDrawables.List[0];
-    d->position->x = 40;
-    d->position->y = 0;
-    d->hull->w = 10;
-    d->hull->h = 48;
-    
-    std::cout << "Testing move_contact right...\n";
-    
-    Sys::Physicsers::move_contact(Sys::Characters.List[0], 100, 0);
-    
-    if(8.0f - Sys::Characters.List[0]->position->x < 0.0001)
-        std::cout << "move_contact rightwards succeeded\n";
-    else
-        std::cout << "TEST FAILED move_contact right\n";
-    
-    
-    new Sys::BoxDrawable(Ent::New());
-    /* BoxDrawable
-     * x: 0
-     * y: 64
-     * w: 40
-     * h: 4
-     */
-    d = Sys::BoxDrawables.List[1];
-    d->position->x = 0;
-    d->position->y = 64;
-    d->hull->w = 40;
-    d->hull->h = 4;
-    
-    std::cout << "Testing move_contact straight down along a wall...\n";
-    
-    Sys::Physicsers::move_contact(Sys::Characters.List[0], 0, 100);
-    
-    if(16.0f - Sys::Characters.List[0]->position->y < 0.0001)
-        std::cout << "move_contact straight down along a wall succeeded\n";
-    else
-        std::cout << "TEST FAILED move_contact straight down along a wall\n";
+    std::cout << "Testing line-aabb collision math...\n";
+    std::cout << "Test1: " << line_aabb_overlap(0, 0, 12, 12, 4, 4, 8, 8) << "\n";
+    	
 }
 #else // not TESTS
 int main(int argc, char *argv[])
