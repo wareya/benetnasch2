@@ -952,14 +952,14 @@ namespace Sys
             for(auto speed : speeds)
             {
 	            SDL_SetRenderDrawColor( Sys::Renderer,
-	            						speed>0?255:0 + fmod(speed,255.0f),
+	            						speed>0?255:0 + fmod(speed,100.0f),
 	            						0,
-	            						speed>0?0:255 + fmod(speed,255.0f), 255 );
+	            						speed>0?0:255 + fmod(speed,100.0f), 255 );
 	            
                 SDL_RenderDrawLine(Sys::Renderer,
                 				   800-150+i, 600-speed/3-150, 800-150+i, 600-150);
                 
-	            SDL_SetRenderDrawColor( Sys::Renderer, 255, 0, fmod(speed,255.0f), 255 );
+	            SDL_SetRenderDrawColor( Sys::Renderer, 255, 0, fmod(speed,100.0f), 255 );
 	            
                 SDL_RenderDrawLine(Sys::Renderer,
                 				   800-150+i, 600-abs(speed/3)-150, 800-150+i, 600-150);
@@ -968,7 +968,7 @@ namespace Sys
             };
             
 	        renderText(800-100, 600-13,
-	                   (std::string("speed: ")+std::to_string(speeds[0])).data(),
+	                   (std::string("speed: ")+std::to_string(speeds.back())).data(),
 	                   Sys::Renderers::afont);
 	        
             return false;
