@@ -15,6 +15,10 @@
 
 typedef long long entityid_t;
 
+
+// because why not
+std::vector<float> speeds;
+
 namespace Ent
 {
     nall::set<entityid_t> Used; // IDs which are currently being used
@@ -660,7 +664,8 @@ namespace Sys
                 float jumpspeed = -300;
                 float fric_moving = pow(0.2, delta);
                 float fric_counter = pow(0.01, delta);
-                float fric_still = pow(0.02, delta);
+                float fric_still = pow(0.025, delta);
+                float fric_sticky = 100*delta;
                 int crawlspeed = 75;
                 int walkspeed = 170;
                 int runspeed = 300;
@@ -689,9 +694,9 @@ namespace Sys
                 if (direction == int(sign(hspeed)) or hspeed == 0)
                 {
                     if (abs(hspeed) >= walkspeed)
-                        ;
-                    else if (abs(hspeed) <= crawlspeed)
                         taccel *= struggle;
+                    else if (abs(hspeed) >= crawlspeed)
+                        ;
                     else
                     {
                         float factor =
@@ -724,7 +729,7 @@ namespace Sys
                 if (direction == 0)
                 {
                     hspeed *= fric_still;
-                    hspeed = absolute(hspeed) - 500*delta;
+                    hspeed = absolute(hspeed) - fric_sticky;
                     hspeed = hspeed > 0 ? hspeed : 0;
                     hspeed *= hsign;
                 }
@@ -856,6 +861,9 @@ namespace Sys
                 hspeed /= delta;
                 vspeed /= delta;
                 //puts("end frame");
+                speeds.push_back(hspeed);
+                while ( speeds.size() > 150 )
+                	speeds.erase ( speeds.begin() );
             };
             return false;
         }
@@ -938,6 +946,33 @@ namespace Sys
             return false;
         }
         bfont * afont;
+        bool DrawSpeedometer(float x, float y) // topleft corner position
+        {
+        	int i = 0;
+            for(auto speed : speeds)
+            {
+	            SDL_SetRenderDrawColor( Sys::Renderer,
+	            						speed>0?255:0 + fmod(speed,255.0f),
+	            						0,
+	            						speed>0?0:255 + fmod(speed,255.0f), 255 );
+	            
+                SDL_RenderDrawLine(Sys::Renderer,
+                				   800-150+i, 600-speed/3-150, 800-150+i, 600-150);
+                
+	            SDL_SetRenderDrawColor( Sys::Renderer, 255, 0, fmod(speed,255.0f), 255 );
+	            
+                SDL_RenderDrawLine(Sys::Renderer,
+                				   800-150+i, 600-abs(speed/3)-150, 800-150+i, 600-150);
+                
+                i += 1;
+            };
+            
+	        renderText(800-100, 600-13,
+	                   (std::string("speed: ")+std::to_string(speeds[0])).data(),
+	                   Sys::Renderers::afont);
+	        
+            return false;
+        }
         bool DrawScreenText(float x, float y)
         {
             //sprintf("%d", );
@@ -996,6 +1031,7 @@ namespace Sys
         Renderers::DrawBackground(view_x, view_y);
         Renderers::DrawTextured(view_x, view_y);
         Renderers::DrawBullets(view_x, view_y);
+        Renderers::DrawSpeedometer(view_x, view_y);
         #endif
         Renderers::DrawScreenText(view_x, view_y);
         
@@ -1097,6 +1133,8 @@ bool sys_init()
 
 bool main_init()
 {
+	speeds.push_back(0);
+	
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
         std::cout << "Could not initialize SDL: " << SDL_GetError() << std::endl;
 

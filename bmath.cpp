@@ -45,7 +45,7 @@ bool line_aabb_overlap (float x1, float y1, float x2, float y2,// coordinate pai
         std::swap(x3, x4);
     if(y3 > y4)
         std::swap(y3, y4);
-	// 0 = left, 2 = right, 1 = center sector
+	// 0 = left/top, 2 = right/bottom, 1 = center sector
 	int dot1_gauge_x = (x1 < x3) ? 0 :
 					   (x1 > x4) ? 2 :
 					   1;
