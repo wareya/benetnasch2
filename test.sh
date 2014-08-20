@@ -1,10 +1,17 @@
 #!/bin/bash
 
 source='benetnasch.cpp'
-sdliflags='`pkg-config SDL2_image --cflags`'
-sdllflags='`pkg-config SDL2_image --libs`'
+forceinclude="`sdl2-config --prefix`"
+sdliflags='`sdl2-config --cflags`'
+sdllflags='`sdl2-config --libs` -lSDL2_image'
 sdllflagsstatic='`pkg-config SDL2_image --static-libs`'
-cflags="-std=c++11 -Wall -pedantic -Iinclude $sdliflags"
+cflags="-std=c++11 -Wall -pedantic -Iinclude $sdliflags -I${forceinclude}/include"
+
+echo ""
+echo "Check sdl2_config --prefix:"
+echo "${forceinclude}"
+echo "Please edit sdl2-config if ${forceinclude}/include/SDL2/SDL.h does not exist."
+echo ""
 
 dflags='-O0 -g -ggdb'
 
