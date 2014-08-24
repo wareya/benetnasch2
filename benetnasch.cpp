@@ -1083,7 +1083,7 @@ namespace Sys
         }
         // Draw simple textured drawables
         Renderers::DrawBackground(view_x, view_y);
-        Renderers::DrawBoxes(view_x, view_y);
+        //Renderers::DrawBoxes(view_x, view_y);
         Renderers::DrawTextured(view_x, view_y);
         Renderers::DrawCharacterDebug(view_x, view_y);
         Renderers::DrawBullets(view_x, view_y);
