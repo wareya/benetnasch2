@@ -1,4 +1,4 @@
-void renderTexture( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, int w, int h )
+void renderTextureInternal( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, int w, int h )
 {
 	//Setup the destination rectangle to be at the position we want
 	SDL_Rect dst;
@@ -9,19 +9,41 @@ void renderTexture( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, int 
 	SDL_RenderCopy( renderer, tex, NULL, &dst );
 }
 
-void renderTexture( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, int scale )
+void renderTextureAngledInternal( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, int w, int h, double angle, double xorigin, double yorigin, bool flipy )
+{
+	//Setup the destination rectangle to be at the position we want
+	SDL_Rect dst;
+	dst.x = x;
+	dst.y = y;
+	dst.w = w;
+	dst.h = h;
+	SDL_Point origin;
+	origin.x = xorigin;
+	origin.y = yorigin;
+	SDL_RenderCopyEx( renderer, tex, NULL, &dst, angle, &origin, flipy?SDL_FLIP_HORIZONTAL:SDL_FLIP_NONE);
+}
+
+void renderTexture( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, double scale )
 {
 	int w, h;
 	SDL_QueryTexture( tex, NULL, NULL, &w, &h );
-	w *= scale;
-	h *= scale;
-	renderTexture( tex, renderer, x, y, w, h );
+	w = round(w*scale);
+	h = round(h*scale);
+	renderTextureInternal( tex, renderer, x, y, w, h );
 }
 void renderTexture( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y )
 {
 	int w, h;
 	SDL_QueryTexture( tex, NULL, NULL, &w, &h );
-	renderTexture( tex, renderer, x, y, w, h );
+	renderTextureInternal( tex, renderer, x, y, w, h );
+}
+void renderTexture( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, double scale, double angle, double xorigin, double yorigin, bool flip )
+{
+	int w, h;
+	SDL_QueryTexture( tex, NULL, NULL, &w, &h );
+	w = round(w*scale);
+	h = round(h*scale);
+	renderTextureAngledInternal( tex, renderer, x, y, w, h, angle, xorigin, yorigin, flip ); 
 }
 
 SDL_Texture *loadTexture( const std::string &file, SDL_Renderer *renderer )

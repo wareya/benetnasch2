@@ -171,6 +171,7 @@ namespace Sys
     struct Component
     {
         Component(entityid_t myEntity);
+        Component();
         virtual ~Component();
         
         entityid_t entityID;
@@ -246,6 +247,7 @@ namespace Sys
     struct TexturedDrawable : public Component
     {
         TexturedDrawable(entityid_t myEntity, double argx, double argy, double argxoffset, double argyoffset);
+        TexturedDrawable(entityid_t myEntity, double argx, double argy, double argxoffset, double argyoffset, char noaddifdefined);
         ~TexturedDrawable();
         Position * position;
         SDL_Texture * sprite;
@@ -258,10 +260,13 @@ namespace Sys
         position = new Position(myEntity, argx, argy);
         TexturedDrawables.add(this);
     }
+    TexturedDrawable::TexturedDrawable(entityid_t myEntity, double argx, double argy, double argxoffset, double argyoffset, char noaddifdefined ) : Component(myEntity), sprite(NULL), xoffset(argxoffset), yoffset(argyoffset)
+    {
+        position = new Position(myEntity, argx, argy);
+    }
     TexturedDrawable::~TexturedDrawable()
     {
-        delete position;
-        SDL_DestroyTexture(sprite);
+        if(position->entityID == entityID) delete position;
         
         TexturedDrawables.remove(this);
     }
@@ -281,6 +286,28 @@ namespace Sys
         return sprite != nullptr;
     }
     
+    struct RotatingTexturedDrawable : public TexturedDrawable
+    {
+        // application: +position, +offset, ~rotation around origin
+        // offset is still useful because position can be (and usually is) overwritten to point to another entity's position
+        RotatingTexturedDrawable(entityid_t myEntity, double argx, double argy, double argxoffset, double argyoffset, double angle, double xorigin, double yorigin);
+        ~RotatingTexturedDrawable();
+        double angle, xorigin, yorigin;
+        bool flip;
+    };
+    Collection<RotatingTexturedDrawable> RotatingTexturedDrawables;
+    RotatingTexturedDrawable::RotatingTexturedDrawable( entityid_t myEntity, double argx, double argy, double argxoffset, double argyoffset, double argangle, double argxorigin, double argyorigin)
+    : TexturedDrawable(myEntity, argx, argy, argxoffset, argyoffset, 1), angle(argangle), xorigin(argxorigin), yorigin(argyorigin)
+    {
+        RotatingTexturedDrawables.add(this);
+        flip = false;
+    }
+    RotatingTexturedDrawable::~RotatingTexturedDrawable()
+    {
+        if(position->entityID == entityID) delete position;
+        
+        RotatingTexturedDrawables.remove(this);
+    }
     
     // background component
     struct BackgroundDrawable : public Component
@@ -320,6 +347,14 @@ namespace Sys
         Hull * head;
         Hull * body;
         TexturedDrawable * sprite;
+        RotatingTexturedDrawable * weaponsprite;
+        const char * image_stand = "sprites/stand.png";
+        const char * image_jump = "sprites/jump.png";
+        const char * image_run = "sprites/run.png";
+        const char * image_leanF = "sprites/leanF.png";
+        const char * image_leanB = "sprites/leanB.png";
+        const char * image_weapon = "sprites/gun.png";
+        
         double hspeed, vspeed;
         bool myself;
         
@@ -349,9 +384,16 @@ namespace Sys
         position = new Position(myEntity, argx, argy);
         
         sprite = new TexturedDrawable(myEntity, argx, argy, 0, 0);
-        sprite->set_sprite("sprites/mychar.png");
+        weaponsprite = new RotatingTexturedDrawable(myEntity, argx, argy, -8, 8, 0, 20, 16);
         
+        sprite->set_sprite(image_stand);
+        weaponsprite->set_sprite(image_weapon);
+        
+        delete sprite->position;
         sprite->position = position;
+        
+        delete weaponsprite->position;
+        weaponsprite->position = position;
         
         Characters.add(this);
     }
@@ -719,11 +761,14 @@ namespace Sys
                 int jumping = (Input::inputs[Input::JUMP] & !Input::last_inputs[Input::JUMP]);
                 
                 // handle weapon things
+                auto rawangle = point_direction(character->center_x()-Sys::view_x, character->center_y()-Sys::view_y, Input::mx, Input::my);
+                auto dir = deg2rad(rawangle);
+                character->weaponsprite->angle = rawangle;
+                
                 int shooting = (Input::inputs[Input::SHOOT] and not Input::last_inputs[Input::SHOOT]);
                 if(shooting)
                 {
                     auto shotspeed = 800;
-                    auto dir = deg2rad(point_direction(character->center_x()-Sys::view_x, character->center_y()-Sys::view_y, Input::mx, Input::my));
                     
                     new Bullet(Ent::New(), character->center_x(), character->center_y(), cos(dir) * shotspeed + hspeed, -sin(dir) * shotspeed, 1);
                 }
@@ -976,6 +1021,14 @@ namespace Sys
             };
             return false;
         }
+        bool DrawRotateTextured(float x, float y) // topleft corner position
+        {
+            for(auto drawable : Sys::RotatingTexturedDrawables)
+            {
+                renderTexture( drawable->sprite, Sys::Renderer, drawable->position->x+drawable->xoffset-x, drawable->position->y+drawable->yoffset-y, 1, -drawable->angle, drawable->xorigin, drawable->yorigin, drawable->flip );
+            };
+            return false;
+        }
         bool DrawCharacterDebug(float x, float y)
         {
             for(auto c : Sys::Characters)
@@ -1111,6 +1164,7 @@ namespace Sys
         Renderers::DrawBackground(view_x, view_y);
         //Renderers::DrawBoxes(view_x, view_y);
         Renderers::DrawTextured(view_x, view_y);
+        Renderers::DrawRotateTextured(view_x, view_y);
         //Renderers::DrawCharacterDebug(view_x, view_y);
         Renderers::DrawBullets(view_x, view_y);
         Renderers::DrawSpeedometer(view_x, view_y);
