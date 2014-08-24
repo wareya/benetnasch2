@@ -1,4 +1,4 @@
-void renderTextureInternal( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, int w, int h )
+void renderTextureInternal( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, int w, int h, bool flipx )
 {
 	//Setup the destination rectangle to be at the position we want
 	SDL_Rect dst;
@@ -6,10 +6,10 @@ void renderTextureInternal( SDL_Texture *tex, SDL_Renderer *renderer, int x, int
 	dst.y = y;
 	dst.w = w;
 	dst.h = h;
-	SDL_RenderCopy( renderer, tex, NULL, &dst );
+	SDL_RenderCopyEx( renderer, tex, NULL, &dst, 0, NULL, flipx?SDL_FLIP_HORIZONTAL:SDL_FLIP_NONE);
 }
 
-void renderTextureAngledInternal( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, int w, int h, double angle, double xorigin, double yorigin, bool flipy )
+void renderTextureAngledInternal( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, int w, int h, double angle, double xorigin, double yorigin, bool flipx )
 {
 	//Setup the destination rectangle to be at the position we want
 	SDL_Rect dst;
@@ -20,30 +20,32 @@ void renderTextureAngledInternal( SDL_Texture *tex, SDL_Renderer *renderer, int 
 	SDL_Point origin;
 	origin.x = xorigin;
 	origin.y = yorigin;
-	SDL_RenderCopyEx( renderer, tex, NULL, &dst, angle, &origin, flipy?SDL_FLIP_HORIZONTAL:SDL_FLIP_NONE);
+	SDL_RenderCopyEx( renderer, tex, NULL, &dst, angle, &origin, flipx?SDL_FLIP_HORIZONTAL:SDL_FLIP_NONE);
 }
-
-void renderTexture( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, double scale )
+// scaled and flippable
+void renderTexture( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, double scale, bool flipx )
 {
 	int w, h;
 	SDL_QueryTexture( tex, NULL, NULL, &w, &h );
 	w = round(w*scale);
 	h = round(h*scale);
-	renderTextureInternal( tex, renderer, x, y, w, h );
+	renderTextureInternal( tex, renderer, x, y, w, h, flipx );
 }
+// simple
 void renderTexture( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y )
 {
 	int w, h;
 	SDL_QueryTexture( tex, NULL, NULL, &w, &h );
-	renderTextureInternal( tex, renderer, x, y, w, h );
+	renderTextureInternal( tex, renderer, x, y, w, h, false );
 }
+// rotated
 void renderTexture( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, double scale, double angle, double xorigin, double yorigin, bool flip )
 {
 	int w, h;
 	SDL_QueryTexture( tex, NULL, NULL, &w, &h );
 	w = round(w*scale);
 	h = round(h*scale);
-	renderTextureAngledInternal( tex, renderer, x, y, w, h, angle, xorigin, yorigin, flip ); 
+	renderTextureAngledInternal( tex, renderer, x, y, w, h, angle, flip?w-xorigin:xorigin, yorigin, flip ); 
 }
 
 SDL_Texture *loadTexture( const std::string &file, SDL_Renderer *renderer )

@@ -252,6 +252,7 @@ namespace Sys
         Position * position;
         SDL_Texture * sprite;
         double xoffset, yoffset;
+        bool flip = false;
         bool set_sprite(const char * sarg);
     };
     Collection<TexturedDrawable> TexturedDrawables;
@@ -293,14 +294,12 @@ namespace Sys
         RotatingTexturedDrawable(entityid_t myEntity, double argx, double argy, double argxoffset, double argyoffset, double angle, double xorigin, double yorigin);
         ~RotatingTexturedDrawable();
         double angle, xorigin, yorigin;
-        bool flip;
     };
     Collection<RotatingTexturedDrawable> RotatingTexturedDrawables;
     RotatingTexturedDrawable::RotatingTexturedDrawable( entityid_t myEntity, double argx, double argy, double argxoffset, double argyoffset, double argangle, double argxorigin, double argyorigin)
     : TexturedDrawable(myEntity, argx, argy, argxoffset, argyoffset, 1), angle(argangle), xorigin(argxorigin), yorigin(argyorigin)
     {
         RotatingTexturedDrawables.add(this);
-        flip = false;
     }
     RotatingTexturedDrawable::~RotatingTexturedDrawable()
     {
@@ -376,10 +375,10 @@ namespace Sys
     Character::Character(entityid_t myEntity, double argx, double argy) : Component(myEntity), hspeed(0), vspeed(0), myself(false)
     {
         // movement hull
-        hull = new Hull(myEntity, 14, 36, 10, 12);
+        hull = new Hull(myEntity, 12, 36, 10, 12);
         // hitboxes
-        body = new Hull(myEntity, 14, 32, 10, 16);
-        head = new Hull(myEntity, 6, 6, 14, 10);
+        body = new Hull(myEntity, 12, 30, 10, 18);
+        head = new Hull(myEntity, 8, 8, 12, 10);
         
         position = new Position(myEntity, argx, argy);
         
@@ -760,10 +759,23 @@ namespace Sys
                 int direction = (Input::inputs[Input::RIGHT] - Input::inputs[Input::LEFT]);
                 int jumping = (Input::inputs[Input::JUMP] & !Input::last_inputs[Input::JUMP]);
                 
-                // handle weapon things
-                auto rawangle = point_direction(character->center_x()-Sys::view_x, character->center_y()-Sys::view_y, Input::mx, Input::my);
+                // update weapon things
+                auto rawangle = fmod(point_direction(character->center_x()-Sys::view_x, character->center_y()-Sys::view_y, Input::mx, Input::my)+360.0, 360.0);
                 auto dir = deg2rad(rawangle);
-                character->weaponsprite->angle = rawangle;
+                
+                if(rawangle >= 90 and rawangle < 270) // aiming generally leftwards (90 is up)
+                {
+                    character->weaponsprite->angle = rawangle-180;
+                    character->weaponsprite->flip = true;
+                    character->sprite->flip = true;
+                }
+                else // generally rightwards
+                {
+                    character->weaponsprite->angle = rawangle;
+                    character->weaponsprite->flip = false;
+                    character->sprite->flip = false;
+                }
+                std::cout << rawangle << "\n";
                 
                 int shooting = (Input::inputs[Input::SHOOT] and not Input::last_inputs[Input::SHOOT]);
                 if(shooting)
@@ -807,7 +819,7 @@ namespace Sys
                     
                 auto hsign = (0 < hspeed) - (hspeed < 0);
                 
-                if (abs(hspeed) > float(runspeed))
+                if (abs(hspeed) > runspeed)
                     hspeed = hsign * runspeed;
                 if (direction == 0)
                 {
@@ -1017,7 +1029,7 @@ namespace Sys
         {
             for(auto drawable : Sys::TexturedDrawables)
             {
-                renderTexture( drawable->sprite, Sys::Renderer, drawable->position->x-x, drawable->position->y-y );
+                renderTexture( drawable->sprite, Sys::Renderer, drawable->position->x-x, drawable->position->y-y, 1, drawable->flip );
             };
             return false;
         }
@@ -1052,7 +1064,7 @@ namespace Sys
         {
             for(auto drawable : Sys::BackgroundDrawables)
             {
-                renderTexture( drawable->sprite, Sys::Renderer, drawable->position->x-x, drawable->position->y-y, 4 );
+                renderTexture( drawable->sprite, Sys::Renderer, drawable->position->x-x, drawable->position->y-y, 4, false );
             };
             return false;
         }
@@ -1165,7 +1177,7 @@ namespace Sys
         //Renderers::DrawBoxes(view_x, view_y);
         Renderers::DrawTextured(view_x, view_y);
         Renderers::DrawRotateTextured(view_x, view_y);
-        //Renderers::DrawCharacterDebug(view_x, view_y);
+        Renderers::DrawCharacterDebug(view_x, view_y);
         Renderers::DrawBullets(view_x, view_y);
         Renderers::DrawSpeedometer(view_x, view_y);
         #endif
