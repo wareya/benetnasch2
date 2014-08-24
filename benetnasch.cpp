@@ -9,6 +9,7 @@
 #undef main
 #include <SDL2/SDL_image.h>
 #include <nall/set.hpp>
+#include <nall/map.hpp>
 #include "bmath.cpp"
 #include "btime.cpp"
 #include "sdlhelpers.cpp"
@@ -165,6 +166,8 @@ namespace Sys
     
     std::vector<bool(*)()> tems; // Sys::tems
     
+    nall::map<std::string, SDL_Texture *> TexturePile;
+    
     struct Component
     {
         Component(entityid_t myEntity);
@@ -231,7 +234,6 @@ namespace Sys
     Collection<Hull> Hulls;
     Hull::Hull(entityid_t myEntity, double argw, double argh, double argxoffset, double argyoffset) : Component(myEntity), w(argw), h(argh), xoffset(argxoffset), yoffset(argyoffset)
     {
-        std::cout << w << " " <<  h << " " <<  xoffset << " " << yoffset << "\n";
         Hulls.add(this);
     }
     Hull::~Hull()
@@ -248,10 +250,10 @@ namespace Sys
         Position * position;
         SDL_Texture * sprite;
         double xoffset, yoffset;
-        bool init(const char * sarg);
+        bool set_sprite(const char * sarg);
     };
     Collection<TexturedDrawable> TexturedDrawables;
-    TexturedDrawable::TexturedDrawable(entityid_t myEntity, double argx, double argy, double argxoffset, double argyoffset) : Component(myEntity), sprite(NULL), xoffset(argxoffset), yoffset(argyoffset)
+    TexturedDrawable::TexturedDrawable(entityid_t myEntity, double argx, double argy, double argxoffset, double argyoffset ) : Component(myEntity), sprite(NULL), xoffset(argxoffset), yoffset(argyoffset)
     {
         position = new Position(myEntity, argx, argy);
         TexturedDrawables.add(this);
@@ -263,9 +265,19 @@ namespace Sys
         
         TexturedDrawables.remove(this);
     }
-    bool TexturedDrawable::init(const char * sarg)
+    bool TexturedDrawable::set_sprite(const char * sarg)
     {
-        sprite = loadTexture( sarg, Sys::Renderer );
+        SDL_Texture ** t = TexturePile.find( std::string(sarg) ).value;
+        if(!t) // null/not found
+        {
+            sprite = loadTexture( sarg, Sys::Renderer );
+            if (sprite)
+                TexturePile.insert(std::string(sarg), sprite);
+        }
+        else // already loaded
+        {
+            sprite = *t;
+        }
         return sprite != nullptr;
     }
     
@@ -337,7 +349,7 @@ namespace Sys
         position = new Position(myEntity, argx, argy);
         
         sprite = new TexturedDrawable(myEntity, argx, argy, 0, 0);
-        sprite->init("sprites/mychar.png");
+        sprite->set_sprite("sprites/mychar.png");
         
         sprite->position = position;
         
@@ -1099,7 +1111,7 @@ namespace Sys
         Renderers::DrawBackground(view_x, view_y);
         //Renderers::DrawBoxes(view_x, view_y);
         Renderers::DrawTextured(view_x, view_y);
-        Renderers::DrawCharacterDebug(view_x, view_y);
+        //Renderers::DrawCharacterDebug(view_x, view_y);
         Renderers::DrawBullets(view_x, view_y);
         Renderers::DrawSpeedometer(view_x, view_y);
         #endif
