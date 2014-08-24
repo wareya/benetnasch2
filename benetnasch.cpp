@@ -92,10 +92,6 @@ namespace Ent
     }
 }
 
-namespace Physicsers
-{
-    bool delta_is_too_damn_low;
-}
 
 namespace Input
 {
@@ -104,7 +100,8 @@ namespace Input
         LEFT,
         RIGHT,
         DOWN,
-        SHOOT
+        SHOOT,
+        NUMBER_INPUTS
     };
     bool inputs[256] = { }; 
     bool last_inputs[256] = { }; 
@@ -140,7 +137,7 @@ namespace Input
     void Update()
     {
         auto mousebitmask = SDL_GetMouseState(&mx, &my);
-        for (short i = 0; i < 256; i++)
+        for (short i = 0; i < NUMBER_INPUTS; i++)
         {
             last_inputs[i] = inputs[i];
             inputs[i] = 0;
@@ -476,10 +473,14 @@ namespace Sys
         
         return false;
     }
+    
+    namespace Physicsers
+    {
+        bool delta_is_too_damn_low = false;
+    }
+    
     bool SDLEvents()
     {
-        if(Physicsers::delta_is_too_damn_low)
-            return false;
         SDL_PumpEvents();
         SDL_Event event;
         while ( SDL_PollEvent( &event ) )
@@ -491,7 +492,10 @@ namespace Sys
                 break;
             }   
         }
-        Input::Update();
+        if(!Physicsers::delta_is_too_damn_low)
+        {
+            Input::Update();
+        }
         return false;
     }
     float view_x, view_y;
@@ -503,7 +507,7 @@ namespace Sys
             bool collided = false;
             for(auto wallchunk : Sys::BoxDrawables)
             {
-                if(aabb_overlap(wallchunk->position->x                     , wallchunk->position->y                         ,
+                if(aabb_overlap(wallchunk->position->x,                      wallchunk->position->y,
                                 wallchunk->position->x + wallchunk->hull->w, wallchunk->position->y     + wallchunk->hull->h,
                                 character->position->x + x + character->hull->xoffset,
                                 character->position->y + y + character->hull->yoffset,
@@ -919,7 +923,6 @@ namespace Sys
                 delete bullet;
             return false;
         }
-        bool delta_is_too_damn_low = false; // accumulate low deltas
     }
     bool UpdateDelta()
     {
@@ -928,23 +931,27 @@ namespace Sys
             Physicsers::delta += Time::delta;
         else
             Physicsers::delta = Time::delta;
+            
+         // seemingly safest max delta time (4fps) because low framerates break delta time
+    	if(Physicsers::delta > 0.25)
+    		Physicsers::delta = 0.25;
         
-    	if(Physicsers::delta > 1)
-    		Physicsers::delta = 1.0;
-        if(Physicsers::delta < 1.0/1000)
-    		Physicsers::delta = 1.0/1000;
-            /*Physicsers::delta_is_too_damn_low = true;
-        else
-            Physicsers::delta_is_too_damn_low = false;*/
+        // if windows lets us do a frame in less than 1ms something wrong happened, accumulate just to be safe (and because very low delta times also break the engine)
+        if(Physicsers::delta < 1.0/1000) 
+    		//Physicsers::delta = 1.0/1000;
+            Physicsers::delta_is_too_damn_low = true;
+        else // will execute even if >= 1.0
+            Physicsers::delta_is_too_damn_low = false;
         #endif
         return false;
     }
     bool Physics()
     {
-    	if(Physicsers::delta_is_too_damn_low)
-            return false;
-        Physicsers::MoveCharacters();
-        Physicsers::MoveBullets();
+    	if(!Physicsers::delta_is_too_damn_low)
+        {
+            Physicsers::MoveCharacters();
+            Physicsers::MoveBullets();
+        }
         return false;
     }
     namespace Renderers
@@ -1053,13 +1060,19 @@ namespace Sys
                        Sys::Renderers::afont);
             for(auto c : Sys::Characters)
             {
-		        renderText(0, 13*6,
+                if (c->myself) renderText(0, 13*6,
 		                   (std::string("x, y:   ")+std::to_string(c->position->x)+std::string(" ")+std::to_string(c->position->y)).data(),
 		                   Sys::Renderers::afont);
 		        break;
             }
             renderText(0, 13*7,
                        (std::string("Delta:  ")+std::to_string(Physicsers::delta)).data(),
+                       Sys::Renderers::afont);
+            std::string inputstr("");
+            for(short i = 0; i < Input::NUMBER_INPUTS; i++)
+                inputstr += std::to_string(Input::inputs[i]);
+            renderText(0, 13*7,
+                       (std::string("Inputs: ")+inputstr).data(),
                        Sys::Renderers::afont);
         	#endif
             return false;
@@ -1197,7 +1210,7 @@ bool main_init()
     Sys::MainWindow = SDL_CreateWindow("Benetnasch", 300, 300, Sys::shape.w, Sys::shape.h, SDL_WINDOW_SHOWN);
     if (Sys::MainWindow == nullptr)
         std::cout << "Could not create an SDL window: " << SDL_GetError() << std::endl;
-    Sys::Renderer = SDL_CreateRenderer(Sys::MainWindow, -1, 0);
+    Sys::Renderer = SDL_CreateRenderer(Sys::MainWindow, -1, SDL_RENDERER_ACCELERATED);
     if (Sys::Renderer == nullptr)
         std::cout << "Could not create an SDL renderer: " << SDL_GetError() << std::endl;
     
@@ -1215,7 +1228,6 @@ int main(int argc, char *argv[])
 {
     std::cout << "Testing line-aabb collision math...\n";
     std::cout << "Test1: " << line_aabb_overlap(0, 0, 12, 12, 4, 4, 8, 8) << "\n";
-    	
 }
 #else // not TESTS
 int main(int argc, char *argv[])

@@ -13,7 +13,7 @@ echo "${forceinclude}"
 echo "Please edit sdl2-config if ${forceinclude}/include/SDL2/SDL.h does not exist."
 echo ""
 
-dflags='-O0 -g -ggdb'
+dflags='-O0 -g -ggdb -mconsole'
 
 fflags='-O3'
 mflags='-O3 -msse -msse2' # modern x86 optimizations
