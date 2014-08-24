@@ -92,6 +92,11 @@ namespace Ent
     }
 }
 
+namespace Physicsers
+{
+    bool delta_is_too_damn_low;
+}
+
 namespace Input
 {
     enum {
@@ -203,14 +208,14 @@ namespace Sys
     // Position component
     struct Position : public Component
     {
-        Position(entityid_t myEntity);
+        Position(entityid_t myEntity, double argx, double argy);
         ~Position();
         double x, y;
     };
     // collection of positions
     Collection<Position> Positions;
     // Constructor will add this new instance to its list
-    Position::Position(entityid_t myEntity) : Component(myEntity), x(0), y(0)
+    Position::Position(entityid_t myEntity, double argx, double argy) : Component(myEntity), x(argx), y(argy)
     {
         Positions.add(this);
     }
@@ -222,13 +227,14 @@ namespace Sys
     // Hull component
     struct Hull : public Component
     {
-        Hull(entityid_t myEntity);
+        Hull(entityid_t myEntity, double argw, double argh, double argxoffset, double argyoffset);
         ~Hull();
-        double h, w, xoffset, yoffset;
+        double w, h, xoffset, yoffset;
     };
     Collection<Hull> Hulls;
-    Hull::Hull(entityid_t myEntity) : Component(myEntity), h(0), w(0), xoffset(0), yoffset(0)
+    Hull::Hull(entityid_t myEntity, double argw, double argh, double argxoffset, double argyoffset) : Component(myEntity), w(argw), h(argh), xoffset(argxoffset), yoffset(argyoffset)
     {
+        std::cout << w << " " <<  h << " " <<  xoffset << " " << yoffset << "\n";
         Hulls.add(this);
     }
     Hull::~Hull()
@@ -237,9 +243,10 @@ namespace Sys
     }
     
     // Sprite component
+    // TODO: move sprite texture loading to a non-component structure
     struct TexturedDrawable : public Component
     {
-        TexturedDrawable(entityid_t myEntity);
+        TexturedDrawable(entityid_t myEntity, double argx, double argy, double argxoffset, double argyoffset);
         ~TexturedDrawable();
         Position * position;
         SDL_Texture * sprite;
@@ -247,9 +254,9 @@ namespace Sys
         bool init(const char * sarg);
     };
     Collection<TexturedDrawable> TexturedDrawables;
-    TexturedDrawable::TexturedDrawable(entityid_t myEntity) : Component(myEntity), sprite(NULL), xoffset(0), yoffset(0)
+    TexturedDrawable::TexturedDrawable(entityid_t myEntity, double argx, double argy, double argxoffset, double argyoffset) : Component(myEntity), sprite(NULL), xoffset(argxoffset), yoffset(argyoffset)
     {
-        position = new Position(myEntity);
+        position = new Position(myEntity, argx, argy);
         TexturedDrawables.add(this);
     }
     TexturedDrawable::~TexturedDrawable()
@@ -264,6 +271,8 @@ namespace Sys
         sprite = loadTexture( sarg, Sys::Renderer );
         return sprite != nullptr;
     }
+    
+    
     // background component
     struct BackgroundDrawable : public Component
     {
@@ -276,7 +285,7 @@ namespace Sys
     Collection<BackgroundDrawable> BackgroundDrawables;
     BackgroundDrawable::BackgroundDrawable(entityid_t myEntity) : Component(myEntity), sprite(NULL)
     {
-        position = new Position(myEntity);
+        position = new Position(myEntity, 0, 0);
         BackgroundDrawables.add(this);
     }
     BackgroundDrawable::~BackgroundDrawable()
@@ -291,49 +300,57 @@ namespace Sys
         sprite = loadTexture( sarg, Sys::Renderer );
         return sprite != nullptr;
     }
+    
     // Character component
     struct Character : public Component
     {
-        Character(entityid_t myEntity);
+        Character(entityid_t myEntity, double argx, double argy);
         ~Character();
         Position * position;
         Hull * hull;
+        Hull * head;
+        Hull * body;
         TexturedDrawable * sprite;
         double hspeed, vspeed;
         bool myself;
         
         void center_on(float x, float y)
         {
-            position->x = x - hull->w/2;
-            position->y = y - hull->h/2;
+            position->x = x - (hull->w+hull->xoffset)/2;
+            position->y = y - (hull->h+hull->yoffset)/2;
         }
         float center_x ()
         {
-            return position->x + hull->w/2;
+            return position->x + (hull->w+hull->xoffset)/2;
         }
         float center_y ()
         {
-            return position->y + hull->h/2;
+            return position->y + (hull->h+hull->yoffset)/2;
         }
     };
     Collection<Character> Characters;
-    Character::Character(entityid_t myEntity) : Component(myEntity), hspeed(0), vspeed(0), myself(false)
+    Character::Character(entityid_t myEntity, double argx, double argy) : Component(myEntity), hspeed(0), vspeed(0), myself(false)
     {
-        hull = new Hull(myEntity);
-        hull->h = 48;
-        hull->w = 32;
-        position = new Position(myEntity);
-        sprite = new TexturedDrawable(myEntity);
+        // movement hull
+        hull = new Hull(myEntity, 14, 36, 10, 12);
+        // hitboxes
+        body = new Hull(myEntity, 14, 32, 10, 16);
+        head = new Hull(myEntity, 6, 6, 14, 10);
+        
+        position = new Position(myEntity, argx, argy);
+        
+        sprite = new TexturedDrawable(myEntity, argx, argy, 0, 0);
         sprite->init("sprites/mychar.png");
-        auto dangle = sprite->position;
+        
         sprite->position = position;
-        delete dangle;
         
         Characters.add(this);
     }
     Character::~Character()
     {
         delete hull;
+        delete head;
+        delete body;
         delete position;
         delete sprite;
         Characters.remove(this);
@@ -341,7 +358,7 @@ namespace Sys
     
     struct Bullet : public Component
     {
-        Bullet(entityid_t myEntity);
+        Bullet(entityid_t myEntity, double argx, double argy, double argh, double argv, double argd);
         ~Bullet();
         Position * position;
         Position * lastposition;
@@ -351,10 +368,10 @@ namespace Sys
         float life;
     };
     Collection<Bullet> Bullets;
-    Bullet::Bullet(entityid_t myEntity) : Component(myEntity), hspeed(0), vspeed(0), damage(0), life(1)
+    Bullet::Bullet(entityid_t myEntity, double argx, double argy, double argh, double argv, double argd) : Component(myEntity), hspeed(argh), vspeed(argv), damage(argd), life(1)
     {
-        position = new Position(myEntity);
-        lastposition = new Position(myEntity);
+        position = new Position(myEntity, argx, argy);
+        lastposition = new Position(myEntity, argx, argy);
         Bullets.add(this);
     }
     Bullet::~Bullet()
@@ -367,7 +384,7 @@ namespace Sys
     
     struct BoxDrawable : public Component
     {
-        BoxDrawable(entityid_t myEntity);
+        BoxDrawable(entityid_t myEntity, double argx, double argy, double argw, double argh);
         ~BoxDrawable();
         Position * position;
         Hull * hull;
@@ -379,10 +396,10 @@ namespace Sys
             SDL_Rect shape;
     };
     Collection<BoxDrawable> BoxDrawables;
-    BoxDrawable::BoxDrawable(entityid_t myEntity) : Component(myEntity)
+    BoxDrawable::BoxDrawable(entityid_t myEntity, double argx, double argy, double argw, double argh) : Component(myEntity)
     {
-        position = new Position(myEntity);
-        hull = new Hull(myEntity);
+        position = new Position(myEntity, argx, argy);
+        hull = new Hull(myEntity, argw, argh, 0, 0);
         BoxDrawables.add(this);
     }
     BoxDrawable::~BoxDrawable()
@@ -461,6 +478,8 @@ namespace Sys
     }
     bool SDLEvents()
     {
+        if(Physicsers::delta_is_too_damn_low)
+            return false;
         SDL_PumpEvents();
         SDL_Event event;
         while ( SDL_PollEvent( &event ) )
@@ -484,10 +503,12 @@ namespace Sys
             bool collided = false;
             for(auto wallchunk : Sys::BoxDrawables)
             {
-                if(aabb_overlap(wallchunk->position->x                         , wallchunk->position->y                         ,
-                                wallchunk->position->x     + wallchunk->hull->w, wallchunk->position->y     + wallchunk->hull->h,
-                                character->position->x + x                     , character->position->y + y                     ,
-                                character->position->x + x + character->hull->w, character->position->y + y + character->hull->h))
+                if(aabb_overlap(wallchunk->position->x                     , wallchunk->position->y                         ,
+                                wallchunk->position->x + wallchunk->hull->w, wallchunk->position->y     + wallchunk->hull->h,
+                                character->position->x + x + character->hull->xoffset,
+                                character->position->y + y + character->hull->yoffset,
+                                character->position->x + x + character->hull->xoffset + character->hull->w,
+                                character->position->y + y + character->hull->yoffset + character->hull->h))
                 {
                     collided = true;
                     break;
@@ -558,13 +579,17 @@ namespace Sys
             }
             double &width = character->hull->w;
             double &height = character->hull->h;
-            auto &x = character->position->x;
-            auto &y = character->position->y;
+            
+            // will be written temporarily
+            auto x = character->position->x + character->hull->xoffset;
+            auto y = character->position->y + character->hull->yoffset;
+            
             float xsign = ssign(hvec);
             float ysign = ssign(vvec);
             //printf("input: %f %f %f %f %f %f\n", x, y, width, height, hvec, vvec);
             
             // make a motion bounding rect and include any collision rect that overlaps it
+            
             auto which = place_meeting_which(x+(xsign < 0 ? width : 0)     , y+(ysign < 0 ? height : 0)     ,
                                              x+(xsign > 0 ? width : 0)+hvec, y+(ysign > 0 ? height : 0)+vvec);
             //std::cout << which.size() << "\n";
@@ -612,7 +637,7 @@ namespace Sys
                             blue_x = green_x;
                             //puts("side ejection");
                             //printf("blue: %f %f\n", blue_x, blue_y);
-                            goto tail;
+                            goto tail; // fuck you this is legit
                         }
                     }
                     // falls through to here if the blue dot is on the wrong side of green line
@@ -624,7 +649,7 @@ namespace Sys
                     tail:
                     eject_x = blue_x - (xsign > 0 ? width  : 0);
                     eject_y = blue_y - (ysign > 0 ? height : 0);
-                    auto eject_sqdist = sqdist(blue_x - red_x, blue_y - red_y); // order doesn't matter because square
+                    auto eject_sqdist = sqdist(blue_x - red_x, blue_y - red_y);
                     if(eject_sqdist > furthest)
                     {
                         furthest = eject_sqdist;
@@ -635,6 +660,9 @@ namespace Sys
                 x = rx;
                 y = ry;
                 //printf("moved: %f %f\n", x - oldx, y - oldy);
+                character->position->x = x - character->hull->xoffset;
+                character->position->y = y - character->hull->yoffset;
+                
                 return std::tuple<float, float>(x - oldx, y - oldy);
             }
         }
@@ -652,12 +680,12 @@ namespace Sys
                 double &hspeed = character->hspeed;
                 double &vspeed = character->vspeed;
                 
-                /* set up muh functions */
+                
                 int stepsize = 4;
+                
                 /*
                  *  handle accelerations
                  */
-                
                 float taccel = 1000*delta;
 		        float gravity = 800*delta;
                 float max_gravity = 2000;
@@ -678,16 +706,10 @@ namespace Sys
                 int shooting = (Input::inputs[Input::SHOOT] and not Input::last_inputs[Input::SHOOT]);
                 if(shooting)
                 {
-                    auto b = new Bullet(Ent::New());
-                    b->position->x = character->center_x();
-                    b->position->y = character->center_y();
-                    *b->lastposition = *b->position;
-                    
-                    b->hspeed = hspeed;
                     auto shotspeed = 800;
                     auto dir = deg2rad(point_direction(character->center_x()-Sys::view_x, character->center_y()-Sys::view_y, Input::mx, Input::my));
-                    b->hspeed += cos(dir) * shotspeed;
-                    b->vspeed += -sin(dir) * shotspeed;
+                    
+                    new Bullet(Ent::New(), character->center_x(), character->center_y(), cos(dir) * shotspeed + hspeed, -sin(dir) * shotspeed, 1);
                 }
                 
                 // If we're moving too slowly, our acceleration should be dampened
@@ -897,15 +919,29 @@ namespace Sys
                 delete bullet;
             return false;
         }
+        bool delta_is_too_damn_low = false; // accumulate low deltas
+    }
+    bool UpdateDelta()
+    {
+        #ifndef B_NO_DELTA
+        if(Physicsers::delta_is_too_damn_low)
+            Physicsers::delta += Time::delta;
+        else
+            Physicsers::delta = Time::delta;
+        
+    	if(Physicsers::delta > 1)
+    		Physicsers::delta = 1.0;
+        /*if(Physicsers::delta < 1.0/1000)
+            Physicsers::delta_is_too_damn_low = true;
+        else
+            Physicsers::delta_is_too_damn_low = false;*/
+        #endif
+        return false;
     }
     bool Physics()
     {
-    	Physicsers::delta = Time::delta;
-    	if(Physicsers::delta > 1)
-    		Physicsers::delta = 1.0;
-    	if(Physicsers::delta < 1.0/1000)
-    		Physicsers::delta = 1.0/1000;
-    	
+    	if(Physicsers::delta_is_too_damn_low)
+            return false;
         Physicsers::MoveCharacters();
         Physicsers::MoveBullets();
         return false;
@@ -920,7 +956,26 @@ namespace Sys
             };
             return false;
         }
-        bool DrawBackground(float x, float y) // topleft corner position
+        bool DrawCharacterDebug(float x, float y)
+        {
+            for(auto c : Sys::Characters)
+            {
+                SDL_Rect shape;
+                
+                auto render = [&shape, x, y, c](Hull * arg) {
+                    shape = {int(floor(arg->xoffset+c->position->x-x)), int(floor(arg->yoffset+c->position->y-y)),
+                             int(round(arg->w)), int(round(arg->h))};
+                    SDL_RenderDrawRect( Sys::Renderer, &shape );
+                };
+                SDL_SetRenderDrawColor(Sys::Renderer, 255, 0, 127, 255);
+                render(c->hull);
+                SDL_SetRenderDrawColor(Sys::Renderer, 0, 127, 255, 255);
+                render(c->head);
+                render(c->body);
+            };
+            return false;
+        }
+        bool DrawBackground(float x, float y)
         {
             for(auto drawable : Sys::BackgroundDrawables)
             {
@@ -928,7 +983,7 @@ namespace Sys
             };
             return false;
         }
-        bool DrawBullets(float x, float y) // topleft corner position
+        bool DrawBullets(float x, float y)
         {
             for(auto bullet : Sys::Bullets)
             {
@@ -946,7 +1001,7 @@ namespace Sys
             return false;
         }
         bfont * afont;
-        bool DrawSpeedometer(float x, float y) // topleft corner position
+        bool DrawSpeedometer(float x, float y)
         {
         	int i = 0;
             for(auto speed : speeds)
@@ -1027,9 +1082,10 @@ namespace Sys
             }
         }
         // Draw simple textured drawables
-        /*Renderers::DrawBoxes(view_x, view_y);*/
         Renderers::DrawBackground(view_x, view_y);
+        Renderers::DrawBoxes(view_x, view_y);
         Renderers::DrawTextured(view_x, view_y);
+        Renderers::DrawCharacterDebug(view_x, view_y);
         Renderers::DrawBullets(view_x, view_y);
         Renderers::DrawSpeedometer(view_x, view_y);
         #endif
@@ -1071,8 +1127,10 @@ namespace Maps
         
         for (long y = 0; y < wallmask->h; ++y)
         {
-            std::cout << "Row " << y << "\n";
+            if (y%10 == 0)
+                std::cout << "Row " << y << "\n";
             long rect_x = -1;
+            
             for (long x = 0; x < wallmask->w; ++x)
             {
                 //std::cout << "Column " << x << "\n";
@@ -1088,22 +1146,14 @@ namespace Maps
                 {
                     if(rect_x != -1) // end of rect
                     {
-                        auto chunk = new Sys::BoxDrawable(Ent::New());
-                        chunk->position->x = scale*rect_x;
-                        chunk->hull    ->w = scale*(x-rect_x);
-                        chunk->position->y = scale*y;
-                        chunk->hull    ->h = scale;
+                        new Sys::BoxDrawable(Ent::New(), scale*rect_x, scale*y, scale*(x-rect_x), scale);
                         rect_x = -1;
                     }
                 }
             }
             if(rect_x != -1) // end of rect
             {
-                auto chunk = new Sys::BoxDrawable(Ent::New());
-                chunk->position->x = scale*rect_x;
-                chunk->hull    ->w = scale*(wallmask->w-rect_x);
-                chunk->position->y = scale*y;
-                chunk->hull    ->h = scale;
+                new Sys::BoxDrawable(Ent::New(), scale*rect_x, scale*y, scale*(wallmask->w-rect_x), scale);
             }
         }
     }
@@ -1116,14 +1166,16 @@ bool sys_init()
     
     Sys::Renderers::afont = new bfont(Sys::Renderer, std::string("The Strider.bmp"));
     
-    auto me = new Sys::Character(Ent::New());
+    auto me = new Sys::Character(Ent::New(), Maps::width/2, Maps::height/2);
     me->myself = true;
-    me->center_on(Maps::width/2, Maps::height/2);
     
     Sys::tems.push_back(&Sys::FrameLimit);
+    #ifndef B_DEBUG_COREFRAMES
+        Sys::tems.push_back(&Sys::UpdateDelta);
+    #endif
     Sys::tems.push_back(&Sys::SDLEvents);
     #ifndef B_DEBUG_COREFRAMES
-    Sys::tems.push_back(&Sys::Physics);
+        Sys::tems.push_back(&Sys::Physics);
     #endif
     Sys::tems.push_back(&Sys::RenderThings);
     Sys::tems.push_back(&Sys::PresentScreen);

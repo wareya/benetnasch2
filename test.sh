@@ -4,7 +4,7 @@ source='benetnasch.cpp'
 forceinclude="`sdl2-config --prefix`"
 sdliflags='`sdl2-config --cflags`'
 sdllflags='`sdl2-config --libs` -lSDL2_image'
-sdllflagsstatic='`pkg-config SDL2_image --static-libs`'
+sdllflagsstatic='`pkg-config SDL2_image --static-libs` -lSDL2_image'
 cflags="-std=c++11 -Wall -pedantic -Iinclude $sdliflags -I${forceinclude}/include"
 
 echo ""
@@ -41,6 +41,8 @@ elif [ "$1" == "-p" ]; then
     cmd="$cmd $pflags"
 elif [ "$1" == "-t" ]; then
     cmd="$cmd $tflags"
+elif [ "$1" == "-c" ]; then
+    cmd="$cmd ${@:2}";
 fi
 
 echo $cmd
