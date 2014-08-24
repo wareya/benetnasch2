@@ -1191,12 +1191,10 @@ bool main_init()
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
         std::cout << "Could not initialize SDL: " << SDL_GetError() << std::endl;
 
-    int MAX_X = 800, MAX_Y = 600;
-    
     Sys::view_x = 0;
     Sys::view_y = 0;
 
-    Sys::MainWindow = SDL_CreateWindow("Benetnasch", 300, 300, MAX_X, MAX_Y, SDL_WINDOW_SHOWN);
+    Sys::MainWindow = SDL_CreateWindow("Benetnasch", 300, 300, Sys::shape.w, Sys::shape.h, SDL_WINDOW_SHOWN);
     if (Sys::MainWindow == nullptr)
         std::cout << "Could not create an SDL window: " << SDL_GetError() << std::endl;
     Sys::Renderer = SDL_CreateRenderer(Sys::MainWindow, -1, 0);
