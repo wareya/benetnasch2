@@ -931,8 +931,9 @@ namespace Sys
         
     	if(Physicsers::delta > 1)
     		Physicsers::delta = 1.0;
-        /*if(Physicsers::delta < 1.0/1000)
-            Physicsers::delta_is_too_damn_low = true;
+        if(Physicsers::delta < 1.0/1000)
+    		Physicsers::delta = 1.0/1000;
+            /*Physicsers::delta_is_too_damn_low = true;
         else
             Physicsers::delta_is_too_damn_low = false;*/
         #endif
