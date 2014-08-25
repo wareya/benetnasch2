@@ -3,7 +3,7 @@
 source='benetnasch.cpp'
 forceinclude="`sdl2-config --prefix`"
 sdliflags='`sdl2-config --cflags`'
-sdllflags='`sdl2-config --libs` -lSDL2_image'
+sdllflags='`sdl2-config --static-libs` -lSDL2_image -static'
 sdllflagsstatic='`pkg-config SDL2_image --static-libs` -lSDL2_image'
 cflags="-std=c++11 -Wall -pedantic -Iinclude $sdliflags -I${forceinclude}/include"
 
@@ -22,6 +22,7 @@ aflags='-O3 -msse -msse2 -msse2avx' # aggressive amd x86 optimizations
 
 tflags='-D TESTS=1'
 pflags='-O3 -D B_FRAMELIMIT_DISABLE -D B_DEBUG_FRAMESONLY -D B_DEBUG_COREFRAMES '
+sflags='-O3 -D B_FRAMELIMIT_DISABLE -D B_DEBUG_NORENDER '
 
 linker="-L /usr/lib -static-libstdc++ -static-libgcc $sdllflags"
 
@@ -41,6 +42,8 @@ elif [ "$1" == "-p" ]; then
     cmd="$cmd $pflags"
 elif [ "$1" == "-t" ]; then
     cmd="$cmd $tflags"
+elif [ "$1" == "-s" ]; then
+    cmd="$cmd $sflags"
 elif [ "$1" == "-c" ]; then
     cmd="$cmd ${@:2}";
 fi

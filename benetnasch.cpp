@@ -1158,6 +1158,7 @@ namespace Sys
     bool RenderThings()
     {
     	#ifndef B_DEBUG_COREFRAMES
+        #ifndef B_DEBUG_NORENDER
         // Clear screen
         // Cheap clear; use SDL_RenderClear() instead of SDL_RenderFillRect() if there are problems
         SDL_SetRenderDrawColor( Renderer, 0, 0, 0, 255);
@@ -1180,6 +1181,7 @@ namespace Sys
         Renderers::DrawCharacterDebug(view_x, view_y);
         Renderers::DrawBullets(view_x, view_y);
         Renderers::DrawSpeedometer(view_x, view_y);
+        #endif
         #endif
         Renderers::DrawScreenText(view_x, view_y);
         
@@ -1204,9 +1206,10 @@ namespace Maps
     void load_wallmask(const char * filename)
     {
         SDL_Surface * wallmask = IMG_Load(filename);
-        if(!wallmask) {
+        if(!wallmask)
+        {
             printf("IMG_Load: %s\n", IMG_GetError());
-            // handle error
+            throw; // can't recover
         }
         int bpp = wallmask->format->BytesPerPixel;
         unsigned char r;
@@ -1253,13 +1256,15 @@ namespace Maps
 
 bool sys_init()
 {
+    Sys::Renderers::afont = new bfont(Sys::Renderer, std::string("The Strider.bmp"));
+    
+    #ifndef B_DEBUG_COREFRAMES
     Maps::load_wallmask("wallmask.png");
     Maps::load_background("background.png");
     
-    Sys::Renderers::afont = new bfont(Sys::Renderer, std::string("The Strider.bmp"));
-    
     auto me = new Sys::Character(Ent::New(), Maps::width/2, Maps::height/2);
     me->myself = true;
+    #endif
     
     Sys::tems.push_back(&Sys::FrameLimit);
     #ifndef B_DEBUG_COREFRAMES
