@@ -3,6 +3,12 @@
 
 #include <iostream>
 
+// base
+typedef double (*DLLSTARTUP)(); // void:
+DLLSTARTUP dllStartup;
+typedef double (*DLLSHUTDOWN)(); // void:
+DLLSHUTDOWN dllShutdown;
+
 // connection
 typedef double (*TCP_CONNECT)(char *, double); // tcpsocket: hostname/ip, port
 TCP_CONNECT tcp_connect;
@@ -92,7 +98,7 @@ typedef double (*READ_FLOAT)(double); // value: buffer|SocketSendBuf
 READ_FLOAT read_float;
 typedef double (*READ_DOUBLE)(double); // value: buffer|SocketSendBuf
 READ_DOUBLE read_double;
-typedef double (*READ_STRING)(double, double); // string: buffer|SocketSendBuf, size
+typedef char * (*READ_STRING)(double, double); // string: buffer|SocketSendBuf, size
 READ_STRING read_string;
 
 // endian
@@ -118,10 +124,10 @@ IP_LOOKUP_NEXT_RESULT ip_lookup_next_result;
 typedef void   (*IP_LOOKUP_DESTROY)(double); // continues: lookup
 IP_LOOKUP_DESTROY ip_lookup_destroy;
 
-typedef double (*IP_IS_IPV4)(char *); // whether: ip
-IP_IS_IPV4 ip_is_ipv4;
-typedef double (*IP_IS_IPV6)(char *); // whether: ip
-IP_IS_IPV6 ip_is_ipv6;
+typedef double (*IP_IS_V4)(char *); // whether: ip
+IP_IS_V4 ip_is_v4;
+typedef double (*IP_IS_V6)(char *); // whether: ip
+IP_IS_V6 ip_is_v6;
 
 // misc
 typedef char * (*SOCKET_REMOTE_IP)(double); // ip: socket
@@ -136,7 +142,7 @@ typedef char * (*SOCKET_ERROR)(double); // error: socket|acceptor
 SOCKET_ERROR socket_error;
 
 
-int set_faucnet_functions()
+int faucnet_init()
 {
     auto obj = SDL_LoadObject("Faucet Networking.dll");
     if(obj == NULL)
@@ -144,6 +150,9 @@ int set_faucnet_functions()
         std::cout << SDL_GetError();
         return -1;
     }
+    // init
+    dllStartup      = (DLLSTARTUP)  SDL_LoadFunction(obj, "dllStartup");
+    dllShutdown    = (DLLSHUTDOWN)  SDL_LoadFunction(obj, "dllShutdown");
     // connection
     tcp_connect             = (TCP_CONNECT)             SDL_LoadFunction(obj, "tcp_connect");
     tcp_listen              = (TCP_LISTEN)              SDL_LoadFunction(obj, "tcp_listen");
@@ -204,8 +213,8 @@ int set_faucnet_functions()
     ip_lookup_next_result   = (IP_LOOKUP_NEXT_RESULT)   SDL_LoadFunction(obj, "ip_lookup_next_result");
     ip_lookup_destroy       = (IP_LOOKUP_DESTROY)       SDL_LoadFunction(obj, "ip_lookup_destroy");
     
-    ip_is_ipv4  = (IP_IS_IPV4)  SDL_LoadFunction(obj, "ip_is_ipv4");
-    ip_is_ipv6  = (IP_IS_IPV6)  SDL_LoadFunction(obj, "ip_is_ipv6");
+    ip_is_v4  = (IP_IS_V4)  SDL_LoadFunction(obj, "ip_is_v4");
+    ip_is_v6  = (IP_IS_V6)  SDL_LoadFunction(obj, "ip_is_v6");
     // misc
     socket_remote_ip    = (SOCKET_REMOTE_IP)    SDL_LoadFunction(obj, "socket_remote_ip");
     socket_local_port   = (SOCKET_LOCAL_PORT)   SDL_LoadFunction(obj, "socket_local_port");
@@ -214,33 +223,43 @@ int set_faucnet_functions()
     socket_error        = (SOCKET_ERROR)        SDL_LoadFunction(obj, "socket_error");
     
     
-    
-    if (tcp_connect && tcp_listen && udp_bind && socket_connecting && socket_accept && socket_destroy && socket_destroy_abortive
-     && tcp_receive && tcp_receive_available && tcp_eof
-     && socket_send && socket_sendbuffer_size && socket_sendbuffer_limit && socket_receivebuffer_size
-     && udp_send && udp_receive
-     && buffer_create && buffer_destroy && buffer_clear && buffer_size && buffer_bytes_left && buffer_set_readpos
-     && write_ubyte && write_byte && write_ushort && write_short && write_uint && write_int && write_float && write_double && write_string
-     && write_buffer && write_buffer_part
-     && read_ubyte && read_byte && read_ushort && read_short && read_uint && read_int && read_float && read_double && read_string
-     && set_little_endian_global && set_little_endian
-     && ip_lookup_create && ipv4_lookup_create &&ipv6_lookup_create
-     && ip_lookup_ready && ip_lookup_has_next && ip_lookup_next_result && ip_lookup_destroy
-     && ip_is_ipv4 && ip_is_ipv6
-     && socket_remote_ip && socket_local_port && socket_remote_port && socket_has_error && socket_error
-     == false)
+    if (!(dllStartup && dllShutdown
+       && tcp_connect && tcp_listen && udp_bind && socket_connecting && socket_accept && socket_destroy && socket_destroy_abortive
+       && tcp_receive && tcp_receive_available && tcp_eof
+       && socket_send && socket_sendbuffer_size && socket_sendbuffer_limit && socket_receivebuffer_size
+       && udp_send && udp_receive
+       && buffer_create && buffer_destroy && buffer_clear && buffer_size && buffer_bytes_left && buffer_set_readpos
+       && write_ubyte && write_byte && write_ushort && write_short && write_uint && write_int && write_float && write_double && write_string
+       && write_buffer && write_buffer_part
+       && read_ubyte && read_byte && read_ushort && read_short && read_uint && read_int && read_float && read_double && read_string
+       && set_little_endian_global && set_little_endian
+       && ip_lookup_create && ipv4_lookup_create && ipv6_lookup_create
+       && ip_lookup_ready && ip_lookup_has_next && ip_lookup_next_result && ip_lookup_destroy
+       && ip_is_v4 && ip_is_v6
+       && socket_remote_ip && socket_local_port && socket_remote_port && socket_has_error && socket_error))
     {
         std::cout << SDL_GetError();
         return -1;
     }
+    dllStartup();
     return 0;
 }
 
-#ifdef FAUCNET_TEST
-int main(int argc, char *argv[])
+void faucnet_exit()
 {
-    if(set_faucnet_functions() == 0)
-        std::cout << "Test ran successfully!";
+    dllShutdown();
+}
+
+#ifdef FAUCNET_TEST
+int main()
+{
+    if(faucnet_init() == 0)
+        std::cout << "Loaded functions successfully\n";
+    auto sock = tcp_connect("google.com", 80);
+    std::cout << "Waiting for connection...\n";
+    while(socket_connecting(sock));
+    std::cout << "Connected!\n";
+    faucnet_exit();
     return 0;
 }
 #endif

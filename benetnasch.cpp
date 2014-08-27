@@ -10,9 +10,11 @@
 #include <SDL2/SDL_image.h>
 #include <nall/set.hpp>
 #include <nall/map.hpp>
+
 #include "bmath.cpp"
 #include "btime.cpp"
 #include "sdlhelpers.cpp"
+#include "faucnet.cpp"
 
 typedef long long entityid_t;
 
