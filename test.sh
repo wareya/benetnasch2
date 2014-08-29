@@ -1,6 +1,34 @@
 #!/bin/bash
 
-source='benetnasch.cpp'
+source='
+ src/blib.cpp
+ src/rendering/drawspeedometer.cpp
+ src/bengine.cpp
+ src/components.cpp
+ src/entity.cpp
+ src/input.cpp
+ src/maps.cpp
+ src/benetnasch.cpp
+ src/physics.cpp
+ src/rendering.cpp
+ src/components/backgrounddrawable.cpp
+ src/components/boxdrawable.cpp
+ src/components/bullet.cpp
+ src/components/character.cpp
+ src/components/primitives.cpp
+ src/components/rotatingtextureddrawable.cpp
+ src/components/textureddrawable.cpp
+ src/components/componentlists.cpp
+ src/physics/characters.cpp
+ src/physics/bullets.cpp
+ src/physics/subroutines.cpp
+ src/rendering/drawbackground.cpp
+ src/rendering/drawboxes.cpp
+ src/rendering/drawbullets.cpp
+ src/rendering/drawcharacterdebug.cpp
+ src/rendering/drawrotatetextured.cpp
+ src/rendering/drawscreentext.cpp
+ src/rendering/drawtextured.cpp'
 forceinclude="`sdl2-config --prefix`"
 sdliflags='`sdl2-config --cflags`'
 sdllflags='`sdl2-config --static-libs` -lSDL2_image -static'
