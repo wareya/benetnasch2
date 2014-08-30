@@ -65,7 +65,9 @@ SDL_Texture *loadTexture( const std::string &file, SDL_Renderer *renderer )
 }
 
 bfont::bfont(SDL_Renderer *renderer, const std::string &file) : renderer(renderer)
-{ }
+{
+	spritesheet = loadTexture(file, renderer);
+}
 
 int colorLetter(bfont * muhfont, unsigned char r, unsigned char g, unsigned char b)
 {
