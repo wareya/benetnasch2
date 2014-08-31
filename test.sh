@@ -1,38 +1,44 @@
 #!/bin/bash
 
-source='
- src/blib.cpp
- src/rendering/drawspeedometer.cpp
- src/bengine.cpp
- src/components.cpp
- src/entity.cpp
- src/input.cpp
- src/maps.cpp
- src/benetnasch.cpp
- src/physics.cpp
- src/rendering.cpp
- src/components/backgrounddrawable.cpp
- src/components/boxdrawable.cpp
- src/components/bullet.cpp
- src/components/character.cpp
- src/components/primitives.cpp
- src/components/rotatingtextureddrawable.cpp
- src/components/textureddrawable.cpp
- src/components/componentlists.cpp
- src/physics/characters.cpp
- src/physics/bullets.cpp
- src/physics/subroutines.cpp
- src/rendering/drawbackground.cpp
- src/rendering/drawboxes.cpp
- src/rendering/drawbullets.cpp
- src/rendering/drawcharacterdebug.cpp
- src/rendering/drawrotatetextured.cpp
- src/rendering/drawscreentext.cpp
- src/rendering/drawtextured.cpp'
+executable="benetnasch.exe"
+mkdir -p obj;
+mkdir -p obj/physics;
+mkdir -p obj/rendering;
+mkdir -p obj/components;
+source=(
+ "src/blib.cpp"
+ "src/rendering/drawspeedometer.cpp"
+ "src/bengine.cpp"
+ "src/components.cpp"
+ "src/entity.cpp"
+ "src/input.cpp"
+ "src/maps.cpp"
+ "src/benetnasch.cpp"
+ "src/physics.cpp"
+ "src/rendering.cpp"
+ "src/components/backgrounddrawable.cpp"
+ "src/components/boxdrawable.cpp"
+ "src/components/bullet.cpp"
+ "src/components/character.cpp"
+ "src/components/primitives.cpp"
+ "src/components/rotatingtextureddrawable.cpp"
+ "src/components/textureddrawable.cpp"
+ "src/components/componentlists.cpp"
+ "src/physics/characters.cpp"
+ "src/physics/bullets.cpp"
+ "src/physics/subroutines.cpp"
+ "src/rendering/drawbackground.cpp"
+ "src/rendering/drawboxes.cpp"
+ "src/rendering/drawbullets.cpp"
+ "src/rendering/drawcharacterdebug.cpp"
+ "src/rendering/drawrotatetextured.cpp"
+ "src/rendering/drawscreentext.cpp"
+ "src/rendering/drawtextured.cpp")
 forceinclude="`sdl2-config --prefix`"
-sdliflags='`sdl2-config --cflags`'
-sdllflags='`sdl2-config --static-libs` -lSDL2_image -static'
+sdliflags="`sdl2-config --cflags`"
+sdllflags="`sdl2-config --static-libs` -lSDL2_image -static"
 cflags="-std=c++11 -Wall -pedantic -Iinclude $sdliflags -I${forceinclude}/include"
+linker="-L /usr/lib -static-libstdc++ -static-libgcc $sdllflags"
 
 if hash sdl2-config; then
     cat /dev/null;
@@ -52,6 +58,7 @@ echo "Looks okay."
 echo "Also, if you get an 'XCClinker' error, remove that flag from sdl2_config."
 echo ""
 
+#options
 dflags='-O0 -g -ggdb -mconsole'
 
 fflags='-O3'
@@ -63,9 +70,9 @@ tflags='-D TESTS=1'
 pflags='-O3 -D B_FRAMELIMIT_DISABLE -D B_DEBUG_FRAMESONLY -D B_DEBUG_COREFRAMES '
 sflags='-O3 -D B_FRAMELIMIT_DISABLE -D B_DEBUG_NORENDER '
 
-linker="-L /usr/lib -static-libstdc++ -static-libgcc $sdllflags"
 
-cmd="g++ $source $cflags $linker"
+cmd="g++ $cflags"
+
 
 if [ "$1" == "-d" ]; then
     cmd="$cmd $dflags"
@@ -87,12 +94,18 @@ elif [ "$1" == "-c" ]; then
     cmd="$cmd ${@:2}";
 fi
 
-echo $cmd
+objects=""
 
-run='./a.exe'
+for i in "${source[@]}"
+do
+    obj="`echo $i | sed 's-src/-obj/-g' | sed 's-.cpp-.o-g'`"
+    if test $i -nt $obj; then
+        echo "$cmd -c $i -o $obj"
+        $cmd -c $i -o $obj
+    fi
+    objects="$objects $obj"
+done
+echo "g++ -o $executable $objects $linker"
+g++ -o $executable $objects $linker
 
-eval $cmd
-if [ "$1" == "-t" ]; then    
-    eval $run
-fi
-
+echo "done"
