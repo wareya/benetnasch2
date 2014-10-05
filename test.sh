@@ -75,6 +75,7 @@ else
 		sdliflags="`pkg-config --cflags sdl2`"
 		sdllflags="`pkg-config --libs sdl2` -lSDL2_image"
 		cflags="-std=c++11 -Wall -pedantic -Iinclude $sdliflags"
+		linker="-L /usr/lib $sdllflags"
 	else
 		forceinclude="`sdl2-config --prefix`" # avoid unfortunate packing mistake
 		sdliflags="`sdl2-config --cflags`"
