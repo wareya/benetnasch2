@@ -1,6 +1,11 @@
 #!/bin/bash
 
-executable="benetnasch.exe"
+if [ "$OSTYPE" == "msys" ]; then
+	executable="benetnasch.exe"
+else
+	executable="benetnasch.out"
+fi
+
 mkdir -p obj;
 mkdir -p obj/physics;
 mkdir -p obj/rendering;
@@ -34,29 +39,65 @@ source=(
  "src/rendering/drawrotatetextured.cpp"
  "src/rendering/drawscreentext.cpp"
  "src/rendering/drawtextured.cpp")
-forceinclude="`sdl2-config --prefix`"
-sdliflags="`sdl2-config --cflags`"
-sdllflags="`sdl2-config --static-libs` -lSDL2_image -static"
-cflags="-std=c++11 -Wall -pedantic -Iinclude $sdliflags -I${forceinclude}/include"
-linker="-L /usr/lib -static-libstdc++ -static-libgcc $sdllflags"
 
-if hash sdl2-config; then
-    cat /dev/null;
+
+if [ "$OSTYPE" == "msys" ]; then
+	echo "Platform seems to be windows. Report this bug if this is not the case."
+	
+	forceinclude="`sdl2-config --prefix`"
+	sdliflags="`sdl2-config --cflags`"
+	sdllflags="`sdl2-config --static-libs` -lSDL2_image -static"
+	cflags="-std=c++11 -Wall -pedantic -Iinclude $sdliflags -I${forceinclude}/include"
+	linker="-L /usr/lib -static-libstdc++ -static-libgcc $sdllflags"
+
+	if hash sdl2-config; then
+		cat /dev/null;
+	else
+		echo "Could not find sdl2-config. Is SDL2 installed correctly? Aborting."
+		exit 1
+	fi
+
+	echo ""
+	echo "Checking sdl2-config --prefix: ${forceinclude}"
+	if [ ! -f "${forceinclude}/lib/libSDL2.a" ]; then
+		echo "sdl2-config prefix does not seem to be valid: edit sdl2-config."
+		echo "Aborting."
+		exit 1;
+	fi
+	echo "Looks okay."
+	echo "Also, if you get an 'XCClinker' error, remove that flag from sdl2_config."
+	echo ""
 else
-    echo "Could not find sdl2-config. Is SDL2 installed correctly? Aborting."
-    exit 1
+	echo "Platform seems to be linux. If not, $OSTYPE is wrong."
+	
+	if hash pkg-config 2>/dev/null; then # prefer pkg-config to sdl2-config
+		echo "Using pkg-config for SDL2 compiler flags."
+		sdliflags="`pkg-config --cflags sdl2`"
+		sdllflags="`pkg-config --libs sdl2` -lSDL2_image"
+		cflags="-std=c++11 -Wall -pedantic -Iinclude $sdliflags"
+	else
+		forceinclude="`sdl2-config --prefix`" # avoid unfortunate packing mistake
+		sdliflags="`sdl2-config --cflags`"
+		sdllflags="`sdl2-config --libs` -lSDL2_image"
+		cflags="-std=c++11 -Wall -pedantic -Iinclude $sdliflags -I${forceinclude}/include"
+		linker="-L /usr/lib $sdllflags"
+		if hash sdl2-config; then
+			cat /dev/null;
+		else
+			echo "Could not find sdl2-config. Is SDL2 installed correctly? Aborting."
+			exit 1
+		fi
+		
+		echo ""
+		echo "Checking sdl2-config --prefix: ${forceinclude}"
+		if [ ! -f "${forceinclude}/lib/libSDL2.so" ]; then
+			echo "sdl2-config prefix does not seem to be valid: edit sdl2-config."
+			echo "Aborting."
+			exit 1;
+		fi
+		echo "Looks okay."
+	fi
 fi
-
-echo ""
-echo "Checking sdl2-config --prefix: ${forceinclude}"
-if [ ! -f "${forceinclude}/lib/libSDL2.a" ]; then
-    echo "sdl2-config prefix does not seem to be valid: edit sdl2-config."
-    echo "Aborting."
-    exit 1;
-fi
-echo "Looks okay."
-echo "Also, if you get an 'XCClinker' error, remove that flag from sdl2_config."
-echo ""
 
 #options
 dflags='-O0 -g -ggdb -mconsole'
