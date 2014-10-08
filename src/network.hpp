@@ -1,8 +1,15 @@
 #include <vector>
+#include <unordered_map>
 #include <string>
+#include "blib.hpp"
 
-namespace Sys
+namespace Net
 {
+    enum {
+        MESSAGE_UNDROPPABLE,
+        MESSAGE_DROPPABLE,
+        ACKNOWLEDGMENT
+    };
     double local_socket;
     struct Message
     {
@@ -10,12 +17,15 @@ namespace Sys
         bool droppable;
         unsigned short message;
         double buffer;
+        double sendtime;
     };
+    
     struct Connection
     {
-        Connection ( std::string hostname, int port );
-        std::string hostname;
+        Connection ( const char * hostname, int port );
+        char * hostname;
         int port;
+        double hostname_lookup;
         
         // ids of the last recieved packets from the other machine
         // out-of-order droppable packets are discarded
@@ -31,21 +41,27 @@ namespace Sys
         long sent_undroppable_packet;
         
         std::vector<Message> undroppable_send_queue;
-        
-        void send ( bool droppable, unsigned subsystem, double buffer );
-        void think ();
     };
-    Connection::Connection ( std::string hostname, int port )
-    : hostname(hostname)
+    Connection::Connection ( const char *  hostname, int port )
+    : hostname((char *)(hostname))
     , port(port)
     , last_droppable_packet(0)
     , last_undroppable_packet(0)
     , acked_undroppable_packet(0)
     , sent_droppable_packet(0)
     , sent_undroppable_packet(0)
-    { }
+    {
+        hostname_lookup = ip_lookup_create((char *)hostname);
+    }
     
-    bool assign ( Connection remote, bool droppable, short message, void(*processor)(double) );
-    bool bind_reception ( int port );
+    std::vector<Connection*> connections;
     
+    typedef void(*processor)(Connection * /*connection*/, double /*buffer*/ );
+    
+    std::unordered_map<unsigned int, processor> handlers;
+    
+    bool init ( int port );
+    bool think ( ); // handle resending, callbacks, hostname lookups
+    void send ( Connection * connection, bool droppable, unsigned short subsystem, double buffer );
+    int assign ( bool droppable, unsigned short message, processor );
 }
