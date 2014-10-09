@@ -8,7 +8,8 @@ namespace Net
     enum {
         MESSAGE_UNDROPPABLE,
         MESSAGE_DROPPABLE,
-        ACKNOWLEDGMENT
+        ACKNOWLEDGMENT,
+        CONNECTION_REQUEST
     };
     double local_socket;
     struct Message

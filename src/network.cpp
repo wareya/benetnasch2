@@ -2,6 +2,9 @@
 #include "blib.hpp"
 #include <string>
 
+// get rid of ridiculous psychotic warning
+#pragma GCC diagnostic ignored "-Wwrite-strings"
+
 namespace Net
 {
     bool init ( int port )
@@ -36,6 +39,7 @@ namespace Net
                     message.sendtime = Time::get_us();
                 }
             }
+            return 0;
         }
         /*  Packet format
             ubyte type:
@@ -53,9 +57,10 @@ namespace Net
         while(udp_receive(local_socket))
         {
             udp_send(local_socket, "127.0.0.1", 9); // discard socket buffer by sending to port 9 TODO: VERIFY (duplicated TODO)
-            auto full_length = socket_receivebuffer_size(local_socket);
             auto remote_ip = socket_remote_ip(local_socket);
             auto remote_port = socket_remote_port(local_socket);
+            
+            auto type = read_ubyte(local_socket);
             
             // TODO: Move this down so connections can actually be, you know, initiated
             Connection * remote = NULL;
@@ -68,10 +73,18 @@ namespace Net
                     break;
                 }
             }
-            if(remote == NULL)
-                *(char *)0 = 0;
-            
-            auto type = read_ubyte(local_socket);
+            // Ignore message if from unknown source and not a request to connect
+            // This is only sent by the initiating side. The initiating side should
+            // make a Connection for its remote manually, instead of from a response.
+            if(remote == NULL and type != CONNECTION_REQUEST)
+                return 0;
+            else if (type == CONNECTION_REQUEST)
+            {
+                auto connection = new Connection(socket_remote_ip(local_socket), socket_remote_port(local_socket));
+                connections.push_back(connection);
+                ip_lookup_destroy(connection->hostname_lookup); // remote messages should already have known IPs
+                connection->hostname_lookup = -1;
+            }
             
             switch(int(type))
             {
@@ -80,7 +93,7 @@ namespace Net
             {
                 auto id = read_uint(local_socket);
                 
-                // ACK immediately
+                // ACK undroppable packets immediately
                 if(type == MESSAGE_UNDROPPABLE)
                 {
                     if(id == remote->last_undroppable_packet+1)
@@ -91,14 +104,15 @@ namespace Net
                         remote->last_undroppable_packet = id;
                     }
                     else
-                        break; // out of order or previous dropped
+                        break; // out of order (late) or previous dropped
+                        // TODO FUTURE: Cache previous dropped messages so that catching up is faster
                 }
                 if(type == MESSAGE_DROPPABLE)
                 {
                     if(id > remote->last_droppable_packet)
                         remote->last_undroppable_packet = id;
                     else
-                        break; // out of order
+                        break; // out of order (late)
                 }
                 
                 auto message = read_ushort(local_socket);
@@ -112,8 +126,10 @@ namespace Net
                 break;
             }
             case ACKNOWLEDGMENT:
-                if(read_uint(local_socket) == remote->acked_undroppable_packet+1)
-                    remote->acked_undroppable_packet += 1;
+                auto id = read_uint(local_socket);
+                if( id > remote->acked_undroppable_packet )
+                    remote->acked_undroppable_packet = id;
+                
                 break;
             }
         }
