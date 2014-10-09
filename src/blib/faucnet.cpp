@@ -16,7 +16,7 @@ int faucnet_init()
     }
     // init
     dllStartup      = (DLLSTARTUP)  SDL_LoadFunction(obj, "dllStartup");
-    dllShutdown    = (DLLSHUTDOWN)  SDL_LoadFunction(obj, "dllShutdown");
+    dllShutdown     = (DLLSHUTDOWN) SDL_LoadFunction(obj, "dllShutdown");
     // connection
     tcp_connect             = (TCP_CONNECT)             SDL_LoadFunction(obj, "tcp_connect");
     tcp_listen              = (TCP_LISTEN)              SDL_LoadFunction(obj, "tcp_listen");
