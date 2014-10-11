@@ -26,7 +26,7 @@ namespace Net
     {
         Connection ( const char * hostname, int port );
         void send_or_resend_connection_request();
-        char * hostname;
+        std::string hostname;
         int port;
         double hostname_lookup;
         

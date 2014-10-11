@@ -32,8 +32,7 @@ int main()
             std::cout << "CLIENT: Sending server a message...\n";
             std::cout << "CLIENT: Check stored IP/port: " << remote->hostname << ":" << remote->port << "\n";
             auto b = buffer_create();
-            char * s = "Hello, server!";
-            write_string(b, s);
+            write_string(b, "Hello, server!");
             send(remote, false, 0, b);
             buffer_destroy(b);
             break;

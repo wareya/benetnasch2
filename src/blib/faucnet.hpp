@@ -20,7 +20,7 @@ typedef double (*DLLSHUTDOWN)(); // void:
 MAYBEEXTERN DLLSHUTDOWN dllShutdown;
 
 // connection
-typedef double (*TCP_CONNECT)(char *, double); // tcpsocket: hostname/ip, port
+typedef double (*TCP_CONNECT)(const char *, double); // tcpsocket: hostname/ip, port
 MAYBEEXTERN TCP_CONNECT tcp_connect;
 typedef double (*TCP_LISTEN)(double); // acceptor: port
 MAYBEEXTERN TCP_LISTEN tcp_listen;
@@ -50,7 +50,7 @@ typedef void  (*SOCKET_SENDBUFFER_LIMIT)(double, double); // void: socket, size
 MAYBEEXTERN SOCKET_SENDBUFFER_LIMIT socket_sendbuffer_limit;
 typedef double (*SOCKET_RECEIVEBUFFER_SIZE)(double); // size: socket
 MAYBEEXTERN SOCKET_RECEIVEBUFFER_SIZE socket_receivebuffer_size;
-typedef double (*UDP_SEND)(double, char *, double); // succeededlimit: udpsocket|buffer, hostname/ip, port
+typedef double (*UDP_SEND)(double, const char *, double); // succeededlimit: udpsocket|buffer, hostname/ip, port
 MAYBEEXTERN UDP_SEND udp_send;
 typedef double (*UDP_RECEIVE)(double); // receivedanything: udpsocket
 MAYBEEXTERN UDP_RECEIVE udp_receive;
@@ -85,7 +85,7 @@ typedef void   (*WRITE_FLOAT)(double, double); // void: buffer|SocketSendBuf, re
 MAYBEEXTERN WRITE_FLOAT write_float;
 typedef void   (*WRITE_DOUBLE)(double, double); // void: buffer|SocketSendBuf, real
 MAYBEEXTERN WRITE_DOUBLE write_double;
-typedef void   (*WRITE_STRING)(double, char *); // void: buffer|SocketSendBuf, string
+typedef void   (*WRITE_STRING)(double, const char *); // void: buffer|SocketSendBuf, string
 MAYBEEXTERN WRITE_STRING write_string;
 typedef void   (*WRITE_BUFFER)(double, double); // void: target, source
 MAYBEEXTERN WRITE_BUFFER write_buffer;
@@ -108,7 +108,7 @@ typedef double (*READ_FLOAT)(double); // value: buffer|SocketSendBuf
 MAYBEEXTERN READ_FLOAT read_float;
 typedef double (*READ_DOUBLE)(double); // value: buffer|SocketSendBuf
 MAYBEEXTERN READ_DOUBLE read_double;
-typedef char * (*READ_STRING)(double, double); // string: buffer|SocketSendBuf, size
+typedef const char * (*READ_STRING)(double, double); // string: buffer|SocketSendBuf, size
 MAYBEEXTERN READ_STRING read_string;
 
 // endian
@@ -118,29 +118,29 @@ typedef void   (*SET_LITTLE_ENDIAN)(double, double); // void: buffer|SocketSendB
 MAYBEEXTERN SET_LITTLE_ENDIAN set_little_endian;
 
 // hostname
-typedef double (*IP_LOOKUP_CREATE)(char *); // lookup: hostname
+typedef double (*IP_LOOKUP_CREATE)(const char *); // lookup: hostname
 MAYBEEXTERN IP_LOOKUP_CREATE ip_lookup_create;
-typedef double (*IPV4_LOOKUP_CREATE)(char *); // lookup: hostname
+typedef double (*IPV4_LOOKUP_CREATE)(const char *); // lookup: hostname
 MAYBEEXTERN IPV4_LOOKUP_CREATE ipv4_lookup_create;
-typedef double (*IPV6_LOOKUP_CREATE)(char *); // lookup: hostname
+typedef double (*IPV6_LOOKUP_CREATE)(const char *); // lookup: hostname
 MAYBEEXTERN IPV6_LOOKUP_CREATE ipv6_lookup_create;
 
 typedef double (*IP_LOOKUP_READY)(double); // isfinished: lookup
 MAYBEEXTERN IP_LOOKUP_READY ip_lookup_ready;
 typedef double (*IP_LOOKUP_HAS_NEXT)(double); // continues: lookup
 MAYBEEXTERN IP_LOOKUP_HAS_NEXT ip_lookup_has_next;
-typedef char * (*IP_LOOKUP_NEXT_RESULT)(double); // ip: lookup
+typedef const char * (*IP_LOOKUP_NEXT_RESULT)(double); // ip: lookup
 MAYBEEXTERN IP_LOOKUP_NEXT_RESULT ip_lookup_next_result;
 typedef void   (*IP_LOOKUP_DESTROY)(double); // continues: lookup
 MAYBEEXTERN IP_LOOKUP_DESTROY ip_lookup_destroy;
 
-typedef double (*IP_IS_V4)(char *); // whether: ip
+typedef double (*IP_IS_V4)(const char *); // whether: ip
 MAYBEEXTERN IP_IS_V4 ip_is_v4;
-typedef double (*IP_IS_V6)(char *); // whether: ip
+typedef double (*IP_IS_V6)(const char *); // whether: ip
 MAYBEEXTERN IP_IS_V6 ip_is_v6;
 
 // misc
-typedef char * (*SOCKET_REMOTE_IP)(double); // ip: socket
+typedef const char * (*SOCKET_REMOTE_IP)(double); // ip: socket
 MAYBEEXTERN SOCKET_REMOTE_IP socket_remote_ip;
 typedef double (*SOCKET_LOCAL_PORT)(double); // port: socket
 MAYBEEXTERN SOCKET_LOCAL_PORT socket_local_port;
@@ -148,7 +148,7 @@ typedef double (*SOCKET_REMOTE_PORT)(double); // port: socket
 MAYBEEXTERN SOCKET_REMOTE_PORT socket_remote_port;
 typedef double (*SOCKET_HAS_ERROR)(double); // haserror: socket|acceptor
 MAYBEEXTERN SOCKET_HAS_ERROR socket_has_error;
-typedef char * (*SOCKET_ERROR)(double); // error: socket|acceptor
+typedef const char * (*SOCKET_ERROR)(double); // error: socket|acceptor
 MAYBEEXTERN SOCKET_ERROR socket_error;
 
 int faucnet_init();

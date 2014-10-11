@@ -14,7 +14,7 @@ namespace Net
     std::vector<Connection*> connections;
     std::unordered_map<unsigned int, processor> handlers;
     
-    Connection::Connection ( const char *  hostname, int port )
+    Connection::Connection ( const char * hostname, int port )
     : hostname((char *)(hostname))
     , port(port)
     , last_droppable_packet(0)
@@ -44,7 +44,7 @@ namespace Net
             #endif
             udp_send(local_socket, "127.0.0.1", 9); // discard socket buffer by sending to port 9 TODO: VERIFY (duplicated TODO)
             write_ubyte(local_socket, CONNECTION_REQUEST);
-            udp_send(local_socket, hostname, port);
+            udp_send(local_socket, (char *)hostname.c_str(), port);
             connection_send_time = Time::get_us();
         }
     }
@@ -70,6 +70,9 @@ namespace Net
                     if(ip_lookup_has_next(connection->hostname_lookup)) // finished with valid IP
                         connection->hostname = ip_lookup_next_result(connection->hostname_lookup);
                     
+                    #ifdef B_NET_DEBUG_PRINTPACK
+                    std::cout << "Doing hostname schenanegans.\n";
+                    #endif
                     ip_lookup_destroy(connection->hostname_lookup);
                     connection->hostname_lookup = -1;
                 }
@@ -83,7 +86,7 @@ namespace Net
                     std::cout << "Resending a message to " << connection->hostname << ":" << connection->port << "\n";
                     #endif
                     message->sendtime = Time::get_us();
-                    udp_send(message->buffer, connection->hostname, connection->port);
+                    udp_send(message->buffer, (char *)connection->hostname.c_str(), connection->port);
                 }
             }
             
@@ -110,9 +113,9 @@ namespace Net
         */
         while(udp_receive(local_socket))
         {
-            udp_send(local_socket, "127.0.0.1", 9); // discard outgoing buffer by sending to port 9 TODO: VERIFY (duplicated TODO)
             auto remote_ip = socket_remote_ip(local_socket);
             auto remote_port = socket_remote_port(local_socket);
+            udp_send(local_socket, "127.0.0.1", 9); // discard outgoing buffer by sending to port 9 TODO: VERIFY (duplicated TODO)
             
             #ifdef B_NET_DEBUG_PRINTPACK
             std::cout << "Got a packet from " << remote_ip << ":" << remote_port << "\n";
@@ -160,6 +163,9 @@ namespace Net
                         std::cout << "It's a new connection.\n";
                     #endif
                     auto connection = new Connection(socket_remote_ip(local_socket), socket_remote_port(local_socket));
+                    #ifdef B_NET_DEBUG_PRINTPACK
+                        std::cout << "Stored as: " << connection->hostname << ":" << connection->port << "\n";
+                    #endif
                     connections.push_back(connection);
                     ip_lookup_destroy(connection->hostname_lookup); // remote messages should already have known IPs
                     connection->hostname_lookup = -1;
@@ -246,7 +252,7 @@ namespace Net
         #ifdef B_NET_DEBUG_PRINTPACK
             std::cout << "Check stored IP/port: " << connection->hostname << ":" << connection->port << "\n";
             std::cout << "outer ptr: " << connection << "\n";
-            std::cout << "inner ptr: " << unsigned(connection->hostname) << "\n";
+            std::cout << "inner ptr: " << &connection->hostname << "\n";
         #endif
 
         double temp = buffer_create();
@@ -267,12 +273,12 @@ namespace Net
         
         udp_send(local_socket, "127.0.0.1", 9); // discard socket buffer by sending to port 9 TODO: VERIFY (duplicated TODO)
         write_buffer(local_socket, temp);
-        udp_send(local_socket, connection->hostname, connection->port);
+        udp_send(local_socket, connection->hostname.c_str(), connection->port);
         
         #ifdef B_NET_DEBUG_PRINTPACK
             std::cout << "Sent a message to " << connection->hostname << ":" << connection->port << "\n";
             std::cout << "outer ptr: " << connection << "\n";
-            std::cout << "inner ptr: " << unsigned(connection->hostname) << "\n";
+            std::cout << "inner ptr: " << &connection->hostname << "\n";
         #endif
         
         if(!droppable) // we want to store our send buffer (rather than the raw buffer, for simplicity's sake) for resending
