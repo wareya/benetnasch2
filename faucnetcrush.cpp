@@ -22,12 +22,15 @@ int main()
         puts("Got a response!");
     }
     
+    // even though temp2 is completely unused it affects the reproducability
     double temp1 = buffer_create();
     double temp2 = buffer_create();
     
+    // these could be any size I think
     write_ubyte(local_socket, 10);
     write_ubyte(local_socket, 10);
     
+    // if I delete one of these it stops working
     write_buffer(temp1, temp1);
     write_buffer(temp1, temp1);
     
@@ -37,6 +40,7 @@ int main()
     buffer_destroy(temp2);
     SDL_Delay(50);
     
+    // send fails reliably on my system, might depend on how faucet networking is compiled.
     while(udp_receive(local_socket))
     {
         puts("That a fact?");
