@@ -25,8 +25,8 @@ int main()
     double temp1 = buffer_create();
     double temp2 = buffer_create();
     
-    write_uint(local_socket, 10);
-    write_uint(local_socket, 10);
+    write_ubyte(local_socket, 10);
+    write_ubyte(local_socket, 10);
     
     write_buffer(temp1, temp1);
     write_buffer(temp1, temp1);
