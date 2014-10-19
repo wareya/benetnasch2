@@ -30,9 +30,9 @@ typedef double (*SOCKET_CONNECTING)(double); // isconnecting: socket (always ret
 MAYBEEXTERN SOCKET_CONNECTING socket_connecting;
 typedef double (*SOCKET_ACCEPT)(double); // tcpsocket|errorcode: acceptor (returns negative for nothing to accept)
 MAYBEEXTERN SOCKET_ACCEPT socket_accept;
-typedef void  (*SOCKET_DESTROY)(double); // void: tcpsocket|acceptor
+typedef double (*SOCKET_DESTROY)(double); // void: tcpsocket|acceptor
 MAYBEEXTERN SOCKET_DESTROY socket_destroy;
-typedef void  (*SOCKET_DESTROY_ABORTIVE)(double); // void: tcpsocket|acceptor (non-graceful version)
+typedef double (*SOCKET_DESTROY_ABORTIVE)(double); // void: tcpsocket|acceptor (non-graceful version)
 MAYBEEXTERN SOCKET_DESTROY_ABORTIVE socket_destroy_abortive;
 
 // data transfer
@@ -42,11 +42,11 @@ typedef double (*TCP_RECEIVE_AVAILABLE)(double); // size: tcpsocket
 MAYBEEXTERN TCP_RECEIVE_AVAILABLE tcp_receive_available;
 typedef double (*TCP_EOF)(double); // connectionisclosed: tcpsocket
 MAYBEEXTERN TCP_EOF tcp_eof;
-typedef void  (*SOCKET_SEND)(double); // void: socket
+typedef double (*SOCKET_SEND)(double); // void: socket
 MAYBEEXTERN SOCKET_SEND socket_send;
 typedef double (*SOCKET_SENDBUFFER_SIZE)(double); // size: socket
 MAYBEEXTERN SOCKET_SENDBUFFER_SIZE socket_sendbuffer_size;
-typedef void  (*SOCKET_SENDBUFFER_LIMIT)(double, double); // void: socket, size
+typedef double (*SOCKET_SENDBUFFER_LIMIT)(double, double); // void: socket, size
 MAYBEEXTERN SOCKET_SENDBUFFER_LIMIT socket_sendbuffer_limit;
 typedef double (*SOCKET_RECEIVEBUFFER_SIZE)(double); // size: socket
 MAYBEEXTERN SOCKET_RECEIVEBUFFER_SIZE socket_receivebuffer_size;
@@ -58,36 +58,36 @@ MAYBEEXTERN UDP_RECEIVE udp_receive;
 // buffer manipulation
 typedef double (*BUFFER_CREATE)(); // buffer
 MAYBEEXTERN BUFFER_CREATE buffer_create;
-typedef void   (*BUFFER_DESTROY)(double); // void: buffer
+typedef double (*BUFFER_DESTROY)(double); // void: buffer
 MAYBEEXTERN BUFFER_DESTROY buffer_destroy;
-typedef void   (*BUFFER_CLEAR)(double); // void: buffer
+typedef double (*BUFFER_CLEAR)(double); // void: buffer
 MAYBEEXTERN BUFFER_CLEAR buffer_clear;
 typedef double (*BUFFER_SIZE)(double); // size: buffer
 MAYBEEXTERN BUFFER_SIZE buffer_size;
 typedef double (*BUFFER_BYTES_LEFT)(double); // size: buffer|socketReceiveBuf
 MAYBEEXTERN BUFFER_BYTES_LEFT buffer_bytes_left;
-typedef void   (*BUFFER_SET_READPOS)(double); // void: buffer|socketReceiveBuf
+typedef double (*BUFFER_SET_READPOS)(double); // void: buffer|socketReceiveBuf
 MAYBEEXTERN BUFFER_SET_READPOS buffer_set_readpos;
 
-typedef void   (*WRITE_UBYTE)(double, double); // void: buffer|SocketSendBuf, real
+typedef double (*WRITE_UBYTE)(double, double); // void: buffer|SocketSendBuf, real
 MAYBEEXTERN WRITE_UBYTE write_ubyte;
-typedef void   (*WRITE_BYTE)(double, double); // void: buffer|SocketSendBuf, real
+typedef double (*WRITE_BYTE)(double, double); // void: buffer|SocketSendBuf, real
 MAYBEEXTERN WRITE_BYTE write_byte;
-typedef void   (*WRITE_USHORT)(double, double); // void: buffer|SocketSendBuf, real
+typedef double (*WRITE_USHORT)(double, double); // void: buffer|SocketSendBuf, real
 MAYBEEXTERN WRITE_USHORT write_ushort;
-typedef void   (*WRITE_SHORT)(double, double); // void: buffer|SocketSendBuf, real
+typedef double (*WRITE_SHORT)(double, double); // void: buffer|SocketSendBuf, real
 MAYBEEXTERN WRITE_SHORT write_short;
-typedef void   (*WRITE_UINT)(double, double); // void: buffer|SocketSendBuf, real
+typedef double (*WRITE_UINT)(double, double); // void: buffer|SocketSendBuf, real
 MAYBEEXTERN WRITE_UINT write_uint;
-typedef void   (*WRITE_INT)(double, double); // void: buffer|SocketSendBuf, real
+typedef double (*WRITE_INT)(double, double); // void: buffer|SocketSendBuf, real
 MAYBEEXTERN WRITE_INT write_int;
-typedef void   (*WRITE_FLOAT)(double, double); // void: buffer|SocketSendBuf, real
+typedef double (*WRITE_FLOAT)(double, double); // void: buffer|SocketSendBuf, real
 MAYBEEXTERN WRITE_FLOAT write_float;
-typedef void   (*WRITE_DOUBLE)(double, double); // void: buffer|SocketSendBuf, real
+typedef double (*WRITE_DOUBLE)(double, double); // void: buffer|SocketSendBuf, real
 MAYBEEXTERN WRITE_DOUBLE write_double;
-typedef void   (*WRITE_STRING)(double, const char *); // void: buffer|SocketSendBuf, string
+typedef double (*WRITE_STRING)(double, const char *); // void: buffer|SocketSendBuf, string
 MAYBEEXTERN WRITE_STRING write_string;
-typedef void   (*WRITE_BUFFER)(double, double); // void: target, source
+typedef double (*WRITE_BUFFER)(double, double); // void: target, source
 MAYBEEXTERN WRITE_BUFFER write_buffer;
 typedef double (*WRITE_BUFFER_PART)(double, double, double); // actualsize: target, source, size
 MAYBEEXTERN WRITE_BUFFER_PART write_buffer_part;
@@ -112,9 +112,9 @@ typedef const char * (*READ_STRING)(double, double); // string: buffer|SocketSen
 MAYBEEXTERN READ_STRING read_string;
 
 // endian
-typedef void   (*SET_LITTLE_ENDIAN_GLOBAL)(double); // void: buffer|SocketSendBuf, size
+typedef double (*SET_LITTLE_ENDIAN_GLOBAL)(double); // void: buffer|SocketSendBuf, size
 MAYBEEXTERN SET_LITTLE_ENDIAN_GLOBAL set_little_endian_global;
-typedef void   (*SET_LITTLE_ENDIAN)(double, double); // void: buffer|SocketSendBuf, size
+typedef double (*SET_LITTLE_ENDIAN)(double, double); // void: buffer|SocketSendBuf, size
 MAYBEEXTERN SET_LITTLE_ENDIAN set_little_endian;
 
 // hostname
@@ -131,7 +131,7 @@ typedef double (*IP_LOOKUP_HAS_NEXT)(double); // continues: lookup
 MAYBEEXTERN IP_LOOKUP_HAS_NEXT ip_lookup_has_next;
 typedef const char * (*IP_LOOKUP_NEXT_RESULT)(double); // ip: lookup
 MAYBEEXTERN IP_LOOKUP_NEXT_RESULT ip_lookup_next_result;
-typedef void   (*IP_LOOKUP_DESTROY)(double); // continues: lookup
+typedef double (*IP_LOOKUP_DESTROY)(double); // continues: lookup
 MAYBEEXTERN IP_LOOKUP_DESTROY ip_lookup_destroy;
 
 typedef double (*IP_IS_V4)(const char *); // whether: ip
