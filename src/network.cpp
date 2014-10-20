@@ -2,11 +2,23 @@
 #include "blib.hpp"
 #include <string>
 
-#define B_NET_DEBUG_PRINTPACK
-
 #ifdef B_NET_DEBUG_PRINTPACK
 #include <iostream>
 #endif
+
+void trash_buffer(double socket) // discard socket buffer by sending to port 9 TODO: VERIFY (duplicated TODO)
+{
+    udp_send(socket, "127.0.0.1", 9);
+}
+
+double udp_send_wrapper(double withandfrom, const char * hostname, double port)
+{
+    auto x = udp_send(withandfrom, hostname, port);
+    #ifdef B_NET_DEBUG_PRINTPACK
+    std::cout << "udp_send returned " << x << "\n";
+    #endif
+    return x;
+}
 
 namespace Net
 {
@@ -17,15 +29,15 @@ namespace Net
     Connection::Connection ( const char * hostname, int port )
     : hostname((char *)(hostname))
     , port(port)
-    , last_droppable_packet(0)
-    , last_undroppable_packet(0)
-    , acked_undroppable_packet(0)
+    , last_droppable_packet(-1)
+    , last_undroppable_packet(-1)
+    , acked_undroppable_packet(-1)
     , sent_droppable_packet(0)
     , sent_undroppable_packet(0)
     , ready(false)
     , connection_send_time(0)
     {
-        hostname_lookup = ip_lookup_create((char *)hostname);
+        hostname_lookup = ip_lookup_create(hostname);
     }
     
     void Connection::send_or_resend_connection_request()
@@ -42,9 +54,9 @@ namespace Net
             #ifdef B_NET_DEBUG_PRINTPACK
             std::cout << "Sending a connection request to " << hostname << ":" << port << "\n";
             #endif
-            udp_send(local_socket, "127.0.0.1", 9); // discard socket buffer by sending to port 9 TODO: VERIFY (duplicated TODO)
+            trash_buffer(local_socket);
             write_ubyte(local_socket, CONNECTION_REQUEST);
-            udp_send(local_socket, (char *)hostname.c_str(), port);
+            udp_send_wrapper(local_socket, hostname.c_str(), port);
             connection_send_time = Time::get_us();
         }
     }
@@ -60,6 +72,7 @@ namespace Net
     
     bool think ( )
     {
+        trash_buffer(local_socket);
         for(auto connection : connections)
         {
             // update hostname lookups
@@ -80,13 +93,14 @@ namespace Net
             
             for(auto message : connection->undroppable_send_queue)
             {
-                if(Time::get_us() - message->sendtime > 1000*1000) // TODO: replace hardcoded 200 ms with ping*1.5 or something
+                if(Time::get_us() - message->sendtime > 1000*200) // TODO: replace hardcoded 200 ms with ping*1.5 or something
                 {
                     #ifdef B_NET_DEBUG_PRINTPACK
-                    std::cout << "Resending a message to " << connection->hostname << ":" << connection->port << "\n";
+                    std::cout << "Resending a message to " << connection->hostname.c_str() << ":" << connection->port << "\n";
                     #endif
                     message->sendtime = Time::get_us();
-                    udp_send(message->buffer, (char *)connection->hostname.c_str(), connection->port);
+                    write_buffer(local_socket, message->buffer);
+                    udp_send_wrapper(local_socket, connection->hostname.c_str(), connection->port);
                 }
             }
             
@@ -115,22 +129,20 @@ namespace Net
         {
             auto remote_ip = socket_remote_ip(local_socket);
             auto remote_port = socket_remote_port(local_socket);
-            udp_send(local_socket, "127.0.0.1", 9); // discard outgoing buffer by sending to port 9 TODO: VERIFY (duplicated TODO)
             
             #ifdef B_NET_DEBUG_PRINTPACK
-            std::cout << "Got a packet from " << remote_ip << ":" << remote_port << "\n";
+                std::cout << "Got a packet from " << remote_ip << ":" << remote_port << "\n";
             #endif
             
             auto type = read_ubyte(local_socket);
             
-            // TODO: Move this down so connections can actually be, you know, initiated
             Connection * remote = NULL;
+            // TODO: There has really truly honestly GOT to be a much better way to do this
             for (auto connection : connections)
             {
-                // TODO: There has really truly honestly GOT to be a much better way to do this
                 #ifdef B_NET_DEBUG_PRINTPACK
-                std::cout << "Comparing connection hostname '" << connection->hostname << "' to ip '" << remote_ip << "'\n";
-                std::cout << "Comparing connection port '" << connection->port << "' to port '" << remote_port << "'\n";
+                    std::cout << "Comparing connection hostname '" << connection->hostname << "' to ip '" << remote_ip << "'\n";
+                    std::cout << "Comparing connection port '" << connection->port << "' to port '" << remote_port << "'\n";
                 #endif
                 if (std::string(connection->hostname) == remote_ip and connection->port == remote_port)
                 {
@@ -145,7 +157,7 @@ namespace Net
             {
                 #ifdef B_NET_DEBUG_PRINTPACK
                     std::cout << "Throwing away packet from "
-                              << socket_remote_ip(local_socket) << ":" << socket_remote_port(local_socket)
+                              << remote_ip << ":" << remote_port
                               << " that would be of type "
                               << type << "\n";
                 #endif
@@ -162,7 +174,7 @@ namespace Net
                     #ifdef B_NET_DEBUG_PRINTPACK
                         std::cout << "It's a new connection.\n";
                     #endif
-                    auto connection = new Connection(socket_remote_ip(local_socket), socket_remote_port(local_socket));
+                    auto connection = new Connection(remote_ip, remote_port);
                     #ifdef B_NET_DEBUG_PRINTPACK
                         std::cout << "Stored as: " << connection->hostname << ":" << connection->port << "\n";
                     #endif
@@ -171,11 +183,17 @@ namespace Net
                     connection->hostname_lookup = -1;
                     connection->ready = true;
                 }
+                else
+                {
+                    #ifdef B_NET_DEBUG_PRINTPACK
+                        std::cout << "Ignoring reconnection from " << remote_ip << "\n";
+                    #endif
+                }
                 #ifdef B_NET_DEBUG_PRINTPACK
                     std::cout << "Sending connection acknowledgment.\n";
                 #endif
                 write_ubyte(local_socket, CONNECTION_ACKNOWLEDGED);
-                udp_send(local_socket, remote_ip, remote_port);
+                udp_send_wrapper(local_socket, remote_ip, remote_port);
             }
             
             switch(int(type))
@@ -187,7 +205,7 @@ namespace Net
                 
                 #ifdef B_NET_DEBUG_PRINTPACK
                     std::cout << "Got a (droppable: " << type << ") message from "
-                              << socket_remote_ip(local_socket) << ":" << socket_remote_port(local_socket)
+                              << remote_ip << ":" << remote_port
                               << " headed " << id << "\n";
                 #endif
                 
@@ -196,14 +214,22 @@ namespace Net
                 {
                     if(id == remote->last_undroppable_packet+1)
                     {
-                        write_ubyte(local_socket, 3);
+                        #ifdef B_NET_DEBUG_PRINTPACK
+                            puts("Acking message");
+                        #endif
+                        write_ubyte(local_socket, ACKNOWLEDGMENT);
                         write_uint(local_socket, id);
-                        udp_send(local_socket, socket_remote_ip(local_socket), socket_remote_port(local_socket));
+                        udp_send_wrapper(local_socket, remote_ip, remote_port);
                         remote->last_undroppable_packet = id;
                     }
                     else
+                    {
+                        #ifdef B_NET_DEBUG_PRINTPACK
+                            puts("Ignoring message");
+                        #endif
                         break; // out of order (late) or previous dropped
-                        // TODO FUTURE: Cache previous dropped messages so that catching up is faster
+                    }
+                    // TODO FUTURE: Cache previously ignored but advanced messages so that catching up is faster
                 }
                 if(type == MESSAGE_DROPPABLE)
                 {
@@ -229,10 +255,30 @@ namespace Net
             }
             case ACKNOWLEDGMENT:
             {
+                #ifdef B_NET_DEBUG_PRINTPACK
+                    std::cout << "Got an ack!\n";
+                #endif
                 auto id = read_uint(local_socket);
-                if( id > remote->acked_undroppable_packet )
+                if ( id > remote->acked_undroppable_packet )
                     remote->acked_undroppable_packet = id;
-                
+                std::vector<Message*> marked_for_removal;
+                for ( auto message : remote->undroppable_send_queue )
+                {
+                    if ( id <= remote->acked_undroppable_packet )
+                        marked_for_removal.push_back(message);
+                }
+                for ( auto message : marked_for_removal )
+                {
+                    unsigned i;
+                    for (i = 0; remote->undroppable_send_queue[i] != message and i < remote->undroppable_send_queue.size(); ++i) ;
+                    if(i == remote->undroppable_send_queue.size())
+                        std::cout << "Bad message removal in ack!";
+                    else
+                    {
+                        remote->undroppable_send_queue.erase(remote->undroppable_send_queue.begin()+i);
+                        delete message;
+                    }
+                }
                 break;
             }
             case CONNECTION_ACKNOWLEDGED:
@@ -249,12 +295,6 @@ namespace Net
     
     void send ( Connection * connection, bool droppable, unsigned short message, double buffer )
     {
-        #ifdef B_NET_DEBUG_PRINTPACK
-            std::cout << "Check stored IP/port: " << connection->hostname << ":" << connection->port << "\n";
-            std::cout << "outer ptr: " << connection << "\n";
-            std::cout << "inner ptr: " << &connection->hostname << "\n";
-        #endif
-
         double temp = buffer_create();
         // write up header etc to temp buffer
         write_ubyte(temp, droppable);
@@ -271,16 +311,23 @@ namespace Net
         write_ushort(temp, message);
         write_buffer(temp, buffer);
         
-        udp_send(local_socket, "127.0.0.1", 9); // discard socket buffer by sending to port 9 TODO: VERIFY (duplicated TODO)
+        trash_buffer(local_socket);
+        
         write_buffer(local_socket, temp);
-        udp_send(local_socket, connection->hostname.c_str(), connection->port);
         
         #ifdef B_NET_DEBUG_PRINTPACK
-            std::cout << "Sent a message to " << connection->hostname << ":" << connection->port << "\n";
-            std::cout << "outer ptr: " << connection << "\n";
-            std::cout << "inner ptr: " << &connection->hostname << "\n";
+            std::cout << "About to send " << buffer_size(temp) << " bytes.\n";
         #endif
         
+        if(connection->ready)
+            udp_send_wrapper(local_socket, connection->hostname.c_str(), connection->port);
+        
+        #ifdef B_NET_DEBUG_PRINTPACK
+            else
+                std::cout << "Connection not ready in send().\n";
+            std::cout << "Sent a message to " << connection->hostname.c_str() << ":" << connection->port << "\n";
+        #endif
+            
         if(!droppable) // we want to store our send buffer (rather than the raw buffer, for simplicity's sake) for resending
             connection->undroppable_send_queue.push_back(new Message ({connection->sent_undroppable_packet-1, droppable, message, temp, Time::get_us()}));
         else // think handles clean of undroppables, but we can trash the droppables here

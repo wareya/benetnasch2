@@ -16,17 +16,20 @@
 #include "physics.hpp"
 #include "speed.hpp"
 #include "input.hpp"
+#include "network.hpp"
+
+#if CLIENT
 
 bool sys_init()
 {
     Sys::afont = new bfont(Sys::Renderer, std::string("The Strider.bmp"));
     
     #ifndef B_DEBUG_COREFRAMES
-    Maps::load_wallmask("wallmask.png");
-    Maps::load_background("background.png");
-    
-    auto me = new Sys::Character(Ent::New(), Maps::width/2, Maps::height/2);
-    me->myself = true;
+        Maps::load_wallmask("wallmask.png");
+        Maps::load_background("background.png");
+        
+        auto me = new Sys::Character(Ent::New(), Maps::width/2, Maps::height/2);
+        me->myself = true;
     #endif
     
     Sys::tems.push_back(&Sys::FrameLimit); // bengine
@@ -69,13 +72,39 @@ bool main_init()
     
     return 0;
 }
-#ifdef TESTS
-int main(int argc, char *argv[])
+#else // not CLIENT
+
+bool sys_init()
 {
-    std::cout << "Testing line-aabb collision math...\n";
-    std::cout << "Test1: " << line_aabb_overlap(0, 0, 12, 12, 4, 4, 8, 8) << "\n";
+    #ifndef B_DEBUG_COREFRAMES
+        Maps::load_wallmask("wallmask.png");
+        
+        auto me = new Sys::Character(Ent::New(), Maps::width/2, Maps::height/2);
+        me->myself = true;
+    #endif
+    
+    Sys::tems.push_back(&Sys::FrameLimit); // bengine
+    #ifndef B_DEBUG_COREFRAMES
+        Sys::tems.push_back(&Sys::UpdateDelta); // physics
+        Sys::tems.push_back(&Sys::Physics); // physics
+    #endif
+    
+    return 1;
 }
-#else // not TESTS
+
+bool main_init()
+{
+	speeds.push_back(0);
+	
+    Net::init(4192);
+    
+    Sys::tems.push_back(&sys_init);
+    
+    return 0;
+}
+
+#endif // CLIENT
+
 int main(int argc, char *argv[])
 {
     if (main_init())
@@ -102,4 +131,3 @@ int main(int argc, char *argv[])
     }
     return 0;
 }
-#endif // TESTS
