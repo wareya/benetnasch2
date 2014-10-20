@@ -114,7 +114,7 @@ pflags='-O3 -D B_FRAMELIMIT_DISABLE -D B_DEBUG_FRAMESONLY -D B_DEBUG_COREFRAMES 
 sflags='-O3 -D B_FRAMELIMIT_DISABLE -D B_DEBUG_NORENDER '
 
 
-cmd="g++ $cflags"
+cmd="g++ -D CLIENT $cflags"
 
 
 if [ "$1" == "-d" ]; then
