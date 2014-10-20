@@ -41,6 +41,11 @@ source=(
  "src/rendering/drawscreentext.cpp"
  "src/rendering/drawtextured.cpp")
 
+if [ "$2" == "server" ] || [ "$2" == "server" ]; then
+    source+=('src/bootserver.cpp')
+else
+    source+=('src/bootclient.cpp')
+fi
 
 if [ "$OSTYPE" == "msys" ]; then
     echo "Platform seems to be windows. Report this bug if this is not the case."
@@ -101,6 +106,10 @@ else
     fi
 fi
 
+
+cmd="g++ $cflags"
+
+
 #options
 dflags='-O0 -g -ggdb -mconsole'
 
@@ -112,10 +121,6 @@ aflags='-O3 -msse -msse2 -msse2avx' # aggressive amd x86 optimizations
 tflags='-D TESTS=1'
 pflags='-O3 -D B_FRAMELIMIT_DISABLE -D B_DEBUG_FRAMESONLY -D B_DEBUG_COREFRAMES '
 sflags='-O3 -D B_FRAMELIMIT_DISABLE -D B_DEBUG_NORENDER '
-
-
-cmd="g++ -D CLIENT $cflags"
-
 
 if [ "$1" == "-d" ]; then
     cmd="$cmd $dflags"
