@@ -1,0 +1,7 @@
+============================
+from below:
+accel(1 - drag^time)
+from above:
+accel(1 + drag^time)
+============================
+(drag is >=0 <=1)
