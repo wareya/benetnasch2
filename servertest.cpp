@@ -9,10 +9,10 @@ void process_message_string(Net::Connection * connection, double buffer)
     std::cout << "SERVER: Got a string size: " << buffer_size(buffer) << " IP: " << connection->hostname << " Port: " << connection->port << "\n";
     std::cout << read_string(buffer, buffer_size(buffer)) << "\n";
     
-    /*auto response = buffer_create();
+    auto response = buffer_create();
     write_string(response, (char *)"Hello, client!");
     send(connection, 0, MESSAGE_STRING, response);
-    buffer_destroy(response);*/
+    buffer_destroy(response);
 }
 
 int main()
@@ -30,7 +30,7 @@ int main()
     while(SDL_GetTicks()-starttime < 60*1000)
     {
         Net::think();
-        SDL_Delay(1);
+        SDL_Delay(50);
     }
     
     faucnet_exit();
