@@ -42,7 +42,7 @@ int main()
     while(SDL_GetTicks()-starttime < 60*1000)
     {
         Net::think();
-        SDL_Delay(1);
+        SDL_Delay(50);
     }
     
     faucnet_exit();

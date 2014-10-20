@@ -12,8 +12,12 @@ int main()
     puts("Starting.");
     double local_socket = udp_bind(2580);
     
-    write_uint(local_socket, 10);
-    udp_send(local_socket, "127.0.0.1", 2580);
+    //const char * remote = "192.168.0.162";
+    const char * remote = "192.168.0.148";
+    //const char * remote = "127.0.0.1";
+    
+    write_string(local_socket, "Biribiri moshimoshi");
+    udp_send(local_socket, remote, 2580);
     
     SDL_Delay(50);
     
@@ -27,14 +31,14 @@ int main()
     double temp2 = buffer_create();
     
     // these could be any size I think
-    write_ubyte(local_socket, 10);
-    write_ubyte(local_socket, 10);
+    write_string(local_socket, "Hayakara Danabu");
+    write_string(local_socket, "");
     
     // if I delete one of these it stops working
-    write_buffer(temp1, temp1);
-    write_buffer(temp1, temp1);
+    write_buffer(temp1, temp2);
+    write_buffer(temp2, temp1);
     
-    udp_send(local_socket, "127.0.0.1", 2580);
+    udp_send(local_socket, remote, 2580);
     
     buffer_destroy(temp1);
     buffer_destroy(temp2);
@@ -45,5 +49,4 @@ int main()
     {
         puts("That a fact?");
     }
-    
 }
