@@ -41,7 +41,7 @@ source=(
  "src/rendering/drawscreentext.cpp"
  "src/rendering/drawtextured.cpp")
 
-if [ "$2" == "server" ] || [ "$2" == "server" ]; then
+if [ "$1" == "server" ] || [ "$1" == "-s" ] || [ "$2" == "server" ]; then
     source+=('src/bootserver.cpp')
 else
     source+=('src/bootclient.cpp')
@@ -120,7 +120,7 @@ aflags='-O3 -msse -msse2 -msse2avx' # aggressive amd x86 optimizations
 
 tflags='-D TESTS=1'
 pflags='-O3 -D B_FRAMELIMIT_DISABLE -D B_DEBUG_FRAMESONLY -D B_DEBUG_COREFRAMES '
-sflags='-O3 -D B_FRAMELIMIT_DISABLE -D B_DEBUG_NORENDER '
+zflags='-O3 -D B_FRAMELIMIT_DISABLE -D B_DEBUG_NORENDER '
 
 if [ "$1" == "-d" ]; then
     cmd="$cmd $dflags"
@@ -136,8 +136,10 @@ elif [ "$1" == "-p" ]; then
     cmd="$cmd $pflags"
 elif [ "$1" == "-t" ]; then
     cmd="$cmd $tflags"
+elif [ "$1" == "-z" ]; then
+    cmd="$cmd $zflags"
 elif [ "$1" == "-s" ]; then
-    cmd="$cmd $sflags"
+    cmd="$cmd ${@:2}";
 elif [ "$1" == "-c" ]; then
     cmd="$cmd ${@:2}";
 fi

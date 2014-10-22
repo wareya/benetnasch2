@@ -1,9 +1,9 @@
 #include "blib.hpp"
 #include "bengine.hpp"
+#include "physics.hpp"
 #include "maps.hpp"
 #include "rendering.hpp"
 #include "components/gamecomponents.hpp"
-#include "physics.hpp"
 #include "speed.hpp"
 #include "input.hpp"
 #include "network.hpp"
@@ -25,9 +25,6 @@ bool sys_init()
         Sys::tems.push_back(&Sys::UpdateDelta); // physics
     #endif
     Sys::tems.push_back(&Sys::SDLEvents); // bengine
-    #ifndef B_DEBUG_COREFRAMES
-        Sys::tems.push_back(&Sys::Physics); // physics
-    #endif
     Sys::tems.push_back(&Sys::RenderThings); // rendering
     Sys::tems.push_back(&Sys::PresentScreen); // rendering
     

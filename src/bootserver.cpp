@@ -1,3 +1,4 @@
+#include "bengine.hpp"
 #include "blib.hpp"
 #include "maps.hpp"
 #include "rendering.hpp"
@@ -12,13 +13,11 @@ bool sys_init()
 {
     #ifndef B_DEBUG_COREFRAMES
         Maps::load_wallmask("wallmask.png");
-        
-        auto me = new Sys::Character(Ent::New(), Maps::width/2, Maps::height/2);
-        me->myself = true;
     #endif
     
     Sys::tems.push_back(&Sys::FrameLimit); // bengine
     #ifndef B_DEBUG_COREFRAMES
+        Sys::tems.push_back(&Net::Think);
         Sys::tems.push_back(&Sys::UpdateDelta); // physics
         Sys::tems.push_back(&Sys::Physics); // physics
     #endif

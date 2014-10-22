@@ -19,7 +19,6 @@ namespace Sys
     
     bool FrameLimit();
     bool SDLEvents();
-    
 }
 
 #endif
