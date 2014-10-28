@@ -2,7 +2,6 @@
 #include "blib.hpp"
 #include "physics.hpp"
 #include "input.hpp"
-#include "client/clientdata.hpp"
 
 namespace Sys
 {
@@ -88,11 +87,6 @@ namespace Sys
                 quit = true;
                 break;
             }   
-        }
-        if(!Physicsers::delta_is_too_damn_low)
-        {
-            Sys::myinput.Update();
-            Sys::myself->input = Sys::myinput.myplayerinput; // TODO: Send over network
         }
         return false;
     }

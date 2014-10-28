@@ -1,4 +1,6 @@
 #include "input.hpp"
+#include "blib/bmath.hpp"
+#include "bengine.hpp"
 
 #include <SDL2/SDL.h>
 #undef main
@@ -34,5 +36,7 @@ namespace Input
             if(mousebitmask & bind.button)
                 myplayerinput.inputs[bind.input_index] = true;
         }
+        myplayerinput.aimDirection = fmod(point_direction(Sys::shape.w/2, Sys::shape.h/2, mx, my)+360.0, 360.0);
+        myplayerinput.aimDistance = point_distance(Sys::shape.w/2, Sys::shape.h/2, mx, my);
     }
 }

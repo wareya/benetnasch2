@@ -17,8 +17,10 @@ namespace Input
     };
     struct PlayerInput
     {
-        bool inputs[NUMBER_INPUTS] = { }; 
-        bool last_inputs[NUMBER_INPUTS] = { }; 
+        bool inputs[NUMBER_INPUTS] = { };
+        bool last_inputs[NUMBER_INPUTS] = { };
+        double aimDirection;
+        double aimDistance;
     };
     struct ClientInput
     {

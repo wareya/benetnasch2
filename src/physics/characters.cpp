@@ -5,8 +5,6 @@
 #include "../components/player.hpp"
 #include <vector>
 
-std::vector<float> speeds;
-
 namespace Sys
 {
     namespace Physicsers
@@ -50,8 +48,7 @@ namespace Sys
                 int jumping = (input.inputs[Input::JUMP] & !input.last_inputs[Input::JUMP]);
                 
                 // update weapon things
-                // TODO: Angle over network
-                auto rawangle = fmod(point_direction(character->center_x()-Sys::view_x, character->center_y()-Sys::view_y, myinput.mx, myinput.my)+360.0, 360.0);
+                auto rawangle = input.aimDirection;
                 auto dir = deg2rad(rawangle);
                 
                 if(rawangle >= 90 and rawangle < 270) // aiming generally leftwards (90 is up)
@@ -247,9 +244,9 @@ namespace Sys
                 hspeed /= delta;
                 vspeed /= delta;
                 //puts("end frame");
-                speeds.push_back(hspeed);
-                while ( speeds.size() > 300 )
-                    speeds.erase ( speeds.begin() );
+                Sys::speeds.push_back(hspeed);
+                while ( Sys::speeds.size() > 300 )
+                    Sys::speeds.erase ( speeds.begin() );
             };
             return false;
         }

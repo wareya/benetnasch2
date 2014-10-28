@@ -48,6 +48,7 @@ if [ "$1" == "server" ] || [ "$1" == "-s" ] || [ "$2" == "server" ]; then
 else
     source+=('src/bootclient.cpp')
     source+=('src/client/clientdata.cpp')
+    source+=('src/client/think.cpp')
 fi
 
 if [ "$OSTYPE" == "msys" ]; then

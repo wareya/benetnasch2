@@ -5,10 +5,10 @@
 #include "rendering.hpp"
 #include "components/gamecomponents.hpp"
 #include "components/player.hpp"
-#include "speed.hpp"
 #include "input.hpp"
 #include "network.hpp"
 #include "client/clientdata.hpp"
+#include "client/think.hpp"
 
 bool sys_init()
 {
@@ -31,6 +31,7 @@ bool sys_init()
     #endif
     Sys::tems.push_back(&Sys::SDLEvents); // bengine
     #ifndef B_DEBUG_COREFRAMES
+        Sys::tems.push_back(&Sys::ClientThink); // client/think
         Sys::tems.push_back(&Sys::Physics); // physics
     #endif
     Sys::tems.push_back(&Sys::RenderThings); // rendering
@@ -41,7 +42,7 @@ bool sys_init()
 
 bool main_init()
 {
-	speeds.push_back(0);
+	Sys::speeds.push_back(0);
 	
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
         std::cout << "Could not initialize SDL: " << SDL_GetError() << std::endl;
