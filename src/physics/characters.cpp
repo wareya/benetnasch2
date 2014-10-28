@@ -1,6 +1,8 @@
 #include "subroutines.hpp"
-#include "../input.hpp" // TODO: put input through network layer
+#include "../input.hpp"
+#include "../client/clientdata.hpp" // TODO: put input through network layer
 #include "../rendering.hpp" // TODO: see above
+#include "../components/player.hpp"
 #include <vector>
 
 std::vector<float> speeds;
@@ -11,8 +13,11 @@ namespace Sys
     {
         bool MoveCharacters()
         {
-            for(auto character : Sys::Characters)
+            for(auto player : Sys::Players)
             {
+                auto character = player->character;
+                if(!character)
+                    continue;
                 /*
                  *  predef
                  */
@@ -40,11 +45,13 @@ namespace Sys
                 int runspeed = 300;
                 float struggle = 0.6;
                 
-                int direction = (Input::inputs[Input::RIGHT] - Input::inputs[Input::LEFT]);
-                int jumping = (Input::inputs[Input::JUMP] & !Input::last_inputs[Input::JUMP]);
+                auto & input = player->input;
+                int direction = (input.inputs[Input::RIGHT] - input.inputs[Input::LEFT]);
+                int jumping = (input.inputs[Input::JUMP] & !input.last_inputs[Input::JUMP]);
                 
                 // update weapon things
-                auto rawangle = fmod(point_direction(character->center_x()-Sys::view_x, character->center_y()-Sys::view_y, Input::mx, Input::my)+360.0, 360.0);
+                // TODO: Angle over network
+                auto rawangle = fmod(point_direction(character->center_x()-Sys::view_x, character->center_y()-Sys::view_y, myinput.mx, myinput.my)+360.0, 360.0);
                 auto dir = deg2rad(rawangle);
                 
                 if(rawangle >= 90 and rawangle < 270) // aiming generally leftwards (90 is up)
@@ -61,7 +68,7 @@ namespace Sys
                 }
                 std::cout << rawangle << "\n";
                 
-                int shooting = (Input::inputs[Input::SHOOT] and not Input::last_inputs[Input::SHOOT]);
+                int shooting = (input.inputs[Input::SHOOT] and not input.last_inputs[Input::SHOOT]);
                 if(shooting)
                 {
                     auto shotspeed = 800;
@@ -228,7 +235,7 @@ namespace Sys
                         if(!sloped) // whole bounce with no collisions to do
                             break;
                     }
-                    if(v_auto == 0 and h_auto == 0) //
+                    if(v_auto == 0 and h_auto == 0) // exhausted distance to travel anyway
                         break;
                 }
                 

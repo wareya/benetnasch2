@@ -1,5 +1,5 @@
-#ifndef INCLUDED_BINPUT
-#define INCLUDED_BINPUT
+#ifndef INCLUDE_INPUT
+#define INCLUDE_INPUT
 
 #include <SDL2/SDL.h>
 #undef main
@@ -15,29 +15,34 @@ namespace Input
         SHOOT,
         NUMBER_INPUTS
     };
-    extern bool inputs[256];
-    extern bool last_inputs[256];
-    extern signed char scrolls[4];
-    extern int mx;
-    extern int my;
-    extern const Uint8 * corestate;
-    
-    struct keybinding
+    struct PlayerInput
     {
-        SDL_Scancode key;
-        unsigned char input_index;
+        bool inputs[NUMBER_INPUTS] = { }; 
+        bool last_inputs[NUMBER_INPUTS] = { }; 
     };
-    extern std::vector<keybinding> keybindings;
-    struct mousebinding
+    struct ClientInput
     {
-        uint32_t button;
-        unsigned char input_index;
+        PlayerInput myplayerinput;
+        int mx;
+        int my;
+        const Uint8 * corestate;
+        
+        struct keybinding
+        {
+            SDL_Scancode key;
+            unsigned char input_index;
+        };
+        std::vector<keybinding> keybindings;
+        struct mousebinding
+        {
+            uint32_t button;
+            unsigned char input_index;
+        };
+        std::vector<mousebinding> mousebindings;
+        
+        void Init();
+        void Update();
     };
-    extern std::vector<mousebinding> mousebindings;
-    
-    void Init();
-    
-    void Update();
 }
 
 #endif

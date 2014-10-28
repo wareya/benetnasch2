@@ -10,6 +10,7 @@ mkdir -p obj
 mkdir -p obj/physics
 mkdir -p obj/rendering
 mkdir -p obj/components
+mkdir -p obj/client
 source=(
  "src/blib.cpp"
  "src/rendering/drawspeedometer.cpp"
@@ -30,6 +31,7 @@ source=(
  "src/components/rotatingtextureddrawable.cpp"
  "src/components/textureddrawable.cpp"
  "src/components/componentlists.cpp"
+ "src/components/player.cpp"
  "src/physics/characters.cpp"
  "src/physics/bullets.cpp"
  "src/physics/subroutines.cpp"
@@ -45,6 +47,7 @@ if [ "$1" == "server" ] || [ "$1" == "-s" ] || [ "$2" == "server" ]; then
     source+=('src/bootserver.cpp')
 else
     source+=('src/bootclient.cpp')
+    source+=('src/client/clientdata.cpp')
 fi
 
 if [ "$OSTYPE" == "msys" ]; then
@@ -153,7 +156,7 @@ do
     for j in "${deps[@]}"
     do
         if test $j -nt $obj; then
-            echo "$cmd -c $j -o $obj"
+            echo "$cmd -c $i -o $obj"
             $cmd -c $i -o $obj
 			break
         fi

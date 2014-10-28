@@ -2,6 +2,7 @@
 #include "commonrenderdep.hpp"
 #include "../input.hpp"
 #include "../physics.hpp"
+#include "../client/clientdata.hpp"
 
 namespace Sys
 {
@@ -41,7 +42,7 @@ namespace Sys
                        Sys::afont);
             std::string inputstr("");
             for(short i = 0; i < Input::NUMBER_INPUTS; i++)
-                inputstr += std::to_string(Input::inputs[i]);
+                inputstr += std::to_string(myself->input.inputs[i]);
             renderText(0, 13*7,
                        (std::string("Inputs: ")+inputstr).data(),
                        Sys::afont);

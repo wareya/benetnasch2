@@ -4,9 +4,11 @@
 #include "maps.hpp"
 #include "rendering.hpp"
 #include "components/gamecomponents.hpp"
+#include "components/player.hpp"
 #include "speed.hpp"
 #include "input.hpp"
 #include "network.hpp"
+#include "client/clientdata.hpp"
 
 bool sys_init()
 {
@@ -16,8 +18,11 @@ bool sys_init()
         Maps::load_wallmask("wallmask.png");
         Maps::load_background("background.png");
         
-        auto me = new Sys::Character(Ent::New(), Maps::width/2, Maps::height/2);
-        me->myself = true;
+        Sys::myinput.Init();
+        Sys::myself = new Sys::Player(Ent::New(), "Wareya");
+        
+        Sys::myself->spawn(Maps::width/2, Maps::height/2);
+        Sys::myself->character->myself = true;
     #endif
     
     Sys::tems.push_back(&Sys::FrameLimit); // bengine
@@ -25,6 +30,9 @@ bool sys_init()
         Sys::tems.push_back(&Sys::UpdateDelta); // physics
     #endif
     Sys::tems.push_back(&Sys::SDLEvents); // bengine
+    #ifndef B_DEBUG_COREFRAMES
+        Sys::tems.push_back(&Sys::Physics); // physics
+    #endif
     Sys::tems.push_back(&Sys::RenderThings); // rendering
     Sys::tems.push_back(&Sys::PresentScreen); // rendering
     
@@ -51,7 +59,7 @@ bool main_init()
     srand(time(NULL));
     
     SDL_PumpEvents();
-    Input::Init();
+    Sys::myinput.Init();
     
     Sys::tems.push_back(&sys_init);
     
