@@ -55,6 +55,7 @@ void process_message_playerinput(Net::Connection * connection, double buffer)
 
 void process_message_spawnnewplayer(Net::Connection * connection, double buffer)
 {
+    puts("spawning new player");
     auto player = new Sys::Player(Ent::New(), read_string(buffer, read_ubyte(buffer)));
     
     player->spawn(read_ushort(buffer), read_ushort(buffer));
@@ -95,7 +96,7 @@ bool main_init()
     Sys::server->send_or_resend_connection_request();
     
     Net::assign ( 1, SERVERMESSAGE::PLAYERINPUT, &process_message_playerinput );
-    Net::assign ( 1, SERVERMESSAGE::SPAWNNEWPLAYER, &process_message_spawnnewplayer );
+    Net::assign ( 0, SERVERMESSAGE::SPAWNNEWPLAYER, &process_message_spawnnewplayer );
     
     Sys::tems.push_back(&sys_init);
     

@@ -49,15 +49,17 @@ void process_message_input(Net::Connection * connection, double buffer)
         write_ushort(response, netkeys); // key
         write_ushort(response, netaimdir); // angle
         write_ubyte(response, netaimdist); // distance
-        Net::send(connection, 0, SERVERMESSAGE::PLAYERINPUT, response);
+        Net::send(connection, 1, SERVERMESSAGE::PLAYERINPUT, response);
         buffer_destroy(response);
     }
 }
 
 void process_message_playerrequest(Net::Connection * connection, double buffer)
 {
+    puts("wanna tell the client to spawn a new player");
     if(Sys::ServerPlayers::FromConnection(connection) == NULL)
     {
+        puts("telling client to spawn a player");
         auto namelen = read_ubyte(buffer);
         auto name = read_string(buffer, namelen);
         auto player = new Sys::Player(Ent::New(), name);

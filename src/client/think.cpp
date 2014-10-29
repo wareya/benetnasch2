@@ -14,6 +14,7 @@ namespace Sys
         {
             if(!did_send_playerrequest)
             {
+                puts("telling server I want it to spawn me");
                 auto request = buffer_create();
                 write_ubyte(request, 6);
                 write_string(request, "Wareya");

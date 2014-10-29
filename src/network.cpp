@@ -2,6 +2,8 @@
 #include "blib.hpp"
 #include <string>
 
+#define B_NET_DEBUG_PRINTPACK
+
 #if defined(B_NET_DEBUG_PRINTPACK) || defined(B_NET_DEBUG_CONNECTION)
 #include <iostream>
 #endif
