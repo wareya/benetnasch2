@@ -5,18 +5,20 @@
 #include <SDL2/SDL.h>
 #undef main
 
+#include <iostream>
+
 namespace Input
 {
-    unsigned short PlayerInput::getInputsAsBitfield()
+    PlayerInput::PlayerInput()
     {
-        unsigned short retvalue;
-        unsigned short mask;
+        
         for (int i = 0; i < NUMBER_INPUTS; i++)
         {
-            mask = 1 << i;
-            retvalue = retvalue & (inputs[i]?mask:0);
+            inputs[i] = 0;
+            last_inputs[i] = 0;
         }
-        return retvalue;
+        aimDirection = 0;
+        aimDistance = 0;
     }
     void PlayerInput::cycleInput()
     {
@@ -26,9 +28,19 @@ namespace Input
             inputs[i] = 0;
         }
     }
+    unsigned short PlayerInput::getInputsAsBitfield()
+    {
+        unsigned short retvalue;
+        unsigned short mask;
+        for (int i = 0; i < NUMBER_INPUTS; i++)
+        {
+            mask = 1 << i;
+            retvalue = retvalue | (inputs[i]?mask:0);
+        }
+        return retvalue;
+    }
     void PlayerInput::setInputsAsBitfield(unsigned short invalue)
     {
-        cycleInput();
         unsigned short mask;
         for (int i = 0; i < NUMBER_INPUTS; i++)
         {

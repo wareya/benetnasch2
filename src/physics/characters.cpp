@@ -1,7 +1,5 @@
 #include "subroutines.hpp"
 #include "../input.hpp"
-#include "../client/clientdata.hpp" // TODO: put input through network layer
-#include "../rendering.hpp" // TODO: see above
 #include "../components/player.hpp"
 #include <vector>
 
@@ -63,7 +61,6 @@ namespace Sys
                     character->weaponsprite->flip = false;
                     character->sprite->flip = false;
                 }
-                std::cout << rawangle << "\n";
                 
                 int shooting = (input.inputs[Input::SHOOT] and not input.last_inputs[Input::SHOOT]);
                 if(shooting)

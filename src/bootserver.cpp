@@ -15,6 +15,7 @@ bool sys_init()
     #endif
     
     Sys::tems.push_back(&Sys::FrameLimit); // bengine
+    Sys::tems.push_back(&Net::think);
     #ifndef B_DEBUG_COREFRAMES
         Sys::tems.push_back(&Sys::UpdateDelta); // physics
         Sys::tems.push_back(&Sys::Physics); // physics
@@ -26,11 +27,11 @@ bool sys_init()
 void process_message_input(Net::Connection * connection, double buffer)
 {
     std::cout << "SERVER: Got an input, size: " << buffer_size(buffer) << " IP: " << connection->hostname << " Port: " << connection->port << "\n";
-    std::cout << read_string(buffer, buffer_size(buffer)) << "\n";
     
     auto response = buffer_create();
-    write_short(buffer, read_ushort(buffer));
-    write_short(buffer, read_ubyte(buffer));
+    write_ushort(response, read_ushort(buffer)); // key
+    write_ushort(response, read_ushort(buffer)); // angle
+    write_ubyte(response, read_ubyte(buffer)); // distance
     Net::send(connection, 1, SERVERMESSAGE::PLAYERINPUT, response);
     buffer_destroy(response);
 }

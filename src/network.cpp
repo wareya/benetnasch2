@@ -2,7 +2,7 @@
 #include "blib.hpp"
 #include <string>
 
-#ifdef B_NET_DEBUG_PRINTPACK
+#if defined(B_NET_DEBUG_PRINTPACK) || defined(B_NET_DEBUG_CONNECTION)
 #include <iostream>
 #endif
 
@@ -44,14 +44,14 @@ namespace Net
     {
         if(ready)
         {
-            #ifdef B_NET_DEBUG_PRINTPACK
+            #if defined(B_NET_DEBUG_PRINTPACK) || defined(B_NET_DEBUG_CONNECTION)
             std::cout << "Remote " << hostname << ":" << port << " is ready.\n";
             #endif
             return;
         }
         else
         {
-            #ifdef B_NET_DEBUG_PRINTPACK
+            #if defined(B_NET_DEBUG_PRINTPACK) || defined(B_NET_DEBUG_CONNECTION)
             std::cout << "Sending a connection request to " << hostname << ":" << port << "\n";
             #endif
             trash_buffer(local_socket);
@@ -63,7 +63,7 @@ namespace Net
     
     bool init ( int port )
     {
-        #ifdef B_NET_DEBUG_PRINTPACK
+        #if defined(B_NET_DEBUG_PRINTPACK) || defined(B_NET_DEBUG_CONNECTION)
         std::cout << "Initing local socket on " << port << "\n";
         #endif
         local_socket = udp_bind(port);
@@ -83,7 +83,7 @@ namespace Net
                     if(ip_lookup_has_next(connection->hostname_lookup)) // finished with valid IP
                         connection->hostname = ip_lookup_next_result(connection->hostname_lookup);
                     
-                    #ifdef B_NET_DEBUG_PRINTPACK
+                    #if defined(B_NET_DEBUG_PRINTPACK) || defined(B_NET_DEBUG_CONNECTION)
                     std::cout << "Doing hostname schenanegans.\n";
                     #endif
                     ip_lookup_destroy(connection->hostname_lookup);
@@ -165,17 +165,17 @@ namespace Net
             }
             else if (type == CONNECTION_REQUEST)
             {
-                #ifdef B_NET_DEBUG_PRINTPACK
+                #if defined(B_NET_DEBUG_PRINTPACK) || defined(B_NET_DEBUG_CONNECTION)
                     std::cout << "Got connection request from "
                               << remote_ip << ":" << remote_port << "\n";
                 #endif
                 if( remote == NULL ) // make sure only to consider connection requests from people who aren't connected (it can/will happen)
                 {
-                    #ifdef B_NET_DEBUG_PRINTPACK
+                    #if defined(B_NET_DEBUG_PRINTPACK) || defined(B_NET_DEBUG_CONNECTION)
                         std::cout << "It's a new connection.\n";
                     #endif
                     auto connection = new Connection(remote_ip, remote_port);
-                    #ifdef B_NET_DEBUG_PRINTPACK
+                    #if defined(B_NET_DEBUG_PRINTPACK) || defined(B_NET_DEBUG_CONNECTION)
                         std::cout << "Stored as: " << connection->hostname << ":" << connection->port << "\n";
                     #endif
                     connections.push_back(connection);
@@ -185,11 +185,11 @@ namespace Net
                 }
                 else
                 {
-                    #ifdef B_NET_DEBUG_PRINTPACK
+                    #if defined(B_NET_DEBUG_PRINTPACK) || defined(B_NET_DEBUG_CONNECTION)
                         std::cout << "Ignoring reconnection from " << remote_ip << "\n";
                     #endif
                 }
-                #ifdef B_NET_DEBUG_PRINTPACK
+                #if defined(B_NET_DEBUG_PRINTPACK) || defined(B_NET_DEBUG_CONNECTION)
                     std::cout << "Sending connection acknowledgment.\n";
                 #endif
                 write_ubyte(local_socket, CONNECTION_ACKNOWLEDGED);

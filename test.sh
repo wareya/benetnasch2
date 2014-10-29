@@ -120,7 +120,7 @@ cmd="g++ $cflags"
 
 
 #options
-dflags='-O0 -g -ggdb -mconsole'
+dflags='-O0 -g -ggdb -mconsole -D B_NET_DEBUG_CONNECTION'
 
 fflags='-O3'
 mflags='-O3 -msse -msse2' # modern x86 optimizations

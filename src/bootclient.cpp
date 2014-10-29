@@ -10,6 +10,7 @@
 #include "netconst.hpp"
 #include "client/clientdata.hpp"
 #include "client/think.hpp"
+#include "physics.hpp"
 
 bool sys_init()
 {
@@ -27,6 +28,7 @@ bool sys_init()
     #endif
     
     Sys::tems.push_back(&Sys::FrameLimit); // bengine
+    Sys::tems.push_back(&Net::think);
     #ifndef B_DEBUG_COREFRAMES
         Sys::tems.push_back(&Sys::UpdateDelta); // physics
     #endif
@@ -44,11 +46,17 @@ bool sys_init()
 void process_message_playerinput(Net::Connection * connection, double buffer)
 {
     std::cout << "CLIENT: Got an input, size: " << buffer_size(buffer) << " IP: " << connection->hostname << " Port: " << connection->port << "\n";
-    std::cout << read_string(buffer, buffer_size(buffer)) << "\n";
-    
-    Sys::myself->input.cycleInput();
-    Sys::myself->input.aimDirection = read_ushort(buffer)*360.0/0x10000;
-    Sys::myself->input.aimDistance = read_ubyte(buffer)*2;
+
+    if(Sys::physics_frames_since_input_cycle)
+    {
+        Sys::myself->input.cycleInput();
+        Sys::physics_frames_since_input_cycle = 0;
+        
+        Sys::myself->input.setInputsAsBitfield ( read_ushort(buffer) ) ;
+        Sys::myself->input.aimDirection = read_ushort(buffer)*360.0/0x10000;
+        std::cout << "CLIENT: Aimdir " << Sys::myself->input.aimDirection << "\n";
+        Sys::myself->input.aimDistance = read_ubyte(buffer)*2;
+    }
 }
 
 bool main_init()
@@ -75,7 +83,9 @@ bool main_init()
     
     Sys::view_x = 0;
     Sys::view_y = 0;
-
+    
+    Net::init(0);
+    
     Sys::server = new Net::Connection( "127.0.0.1", 4192 );
     Net::connections.push_back(Sys::server);
     Sys::server->send_or_resend_connection_request();

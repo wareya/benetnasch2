@@ -10,5 +10,6 @@ namespace Sys
     Player * myself;
     std::vector<float> speeds;
     Net::Connection * server;
+    int physics_frames_since_input_cycle;
 }
 
