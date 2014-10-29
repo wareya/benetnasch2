@@ -10,6 +10,7 @@ namespace Sys
         pteam = 0; // TODO: enum
         pclass = 0; // TODO: enum
         spawntimer = -1;
+        physics_frames_since_input_cycle = 0;
         Players.add(this);
     }
     Player::~Player()

@@ -41,11 +41,14 @@ namespace Sys
                        (std::string("Delta:  ")+std::to_string(Physicsers::delta)).data(),
                        Sys::afont);
             std::string inputstr("");
-            for(short i = 0; i < Input::NUMBER_INPUTS; i++)
-                inputstr += std::to_string(myself->input.inputs[i]);
-            renderText(0, 13*7,
-                       (std::string("Inputs: ")+inputstr).data(),
-                       Sys::afont);
+            if(myself)
+            {
+                for(short i = 0; i < Input::NUMBER_INPUTS; i++)
+                    inputstr += std::to_string(myself->input.inputs[i]);
+                renderText(0, 13*7,
+                           (std::string("Inputs: ")+inputstr).data(),
+                           Sys::afont);
+            }
         	#endif
             return false;
         }

@@ -2,6 +2,7 @@
 #define INCLUDE_BCOMPONENTS
 
 #include "entity.hpp"
+#include <nall/set.hpp>
 
 namespace Sys
 {

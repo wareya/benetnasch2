@@ -21,10 +21,8 @@ bool sys_init()
         Maps::load_background("background.png");
         
         Sys::myinput.Init();
-        Sys::myself = new Sys::Player(Ent::New(), "Wareya");
-        
-        Sys::myself->spawn(Maps::width/2, Maps::height/2);
-        Sys::myself->character->myself = true;
+        Sys::myself = nullptr;
+        Sys::did_send_playerrequest = false;
     #endif
     
     Sys::tems.push_back(&Sys::FrameLimit); // bengine
@@ -45,18 +43,24 @@ bool sys_init()
 
 void process_message_playerinput(Net::Connection * connection, double buffer)
 {
-    std::cout << "CLIENT: Got an input, size: " << buffer_size(buffer) << " IP: " << connection->hostname << " Port: " << connection->port << "\n";
-
-    if(Sys::physics_frames_since_input_cycle)
+    if(Sys::myself->physics_frames_since_input_cycle)
     {
         Sys::myself->input.cycleInput();
-        Sys::physics_frames_since_input_cycle = 0;
-        
-        Sys::myself->input.setInputsAsBitfield ( read_ushort(buffer) ) ;
-        Sys::myself->input.aimDirection = read_ushort(buffer)*360.0/0x10000;
-        std::cout << "CLIENT: Aimdir " << Sys::myself->input.aimDirection << "\n";
-        Sys::myself->input.aimDistance = read_ubyte(buffer)*2;
+        Sys::myself->physics_frames_since_input_cycle = 0;
     }
+    Sys::myself->input.setInputsAsBitfield ( read_ushort(buffer) ) ;
+    Sys::myself->input.aimDirection = read_ushort(buffer)*360.0/0x10000;
+    Sys::myself->input.aimDistance = read_ubyte(buffer)*2;
+}
+
+void process_message_spawnnewplayer(Net::Connection * connection, double buffer)
+{
+    auto player = new Sys::Player(Ent::New(), read_string(buffer, read_ubyte(buffer)));
+    
+    player->spawn(read_ushort(buffer), read_ushort(buffer));
+    player->character->myself = read_ubyte(buffer);
+    if(player->character->myself)
+        Sys::myself = player;
 }
 
 bool main_init()
@@ -91,6 +95,7 @@ bool main_init()
     Sys::server->send_or_resend_connection_request();
     
     Net::assign ( 1, SERVERMESSAGE::PLAYERINPUT, &process_message_playerinput );
+    Net::assign ( 1, SERVERMESSAGE::SPAWNNEWPLAYER, &process_message_spawnnewplayer );
     
     Sys::tems.push_back(&sys_init);
     

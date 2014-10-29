@@ -5,14 +5,16 @@ namespace CLIENTMESSAGE
 {
     enum
     {
-        INPUT
+        INPUT,
+        PLAYERREQUEST
     };
 }
 namespace SERVERMESSAGE
 {
     enum
     {
-        PLAYERINPUT
+        PLAYERINPUT,
+        SPAWNNEWPLAYER
     };
 }
 namespace MESSAGE

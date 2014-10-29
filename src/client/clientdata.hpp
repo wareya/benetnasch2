@@ -13,7 +13,7 @@ namespace Sys
     extern Player * myself;
     extern std::vector<float> speeds;
     extern Net::Connection * server;
-    extern int physics_frames_since_input_cycle;
+    extern bool did_send_playerrequest;
 }
 
 #endif

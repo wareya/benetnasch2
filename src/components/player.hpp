@@ -20,6 +20,7 @@ namespace Sys
         int pclass;
         
         double spawntimer;
+        int physics_frames_since_input_cycle;
         
         Input::PlayerInput input;
     };

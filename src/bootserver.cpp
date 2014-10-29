@@ -7,6 +7,8 @@
 #include "input.hpp"
 #include "network.hpp"
 #include "netconst.hpp"
+#include "serverplayer.hpp"
+#include "components/player.hpp"
 
 bool sys_init()
 {
@@ -26,14 +28,54 @@ bool sys_init()
 
 void process_message_input(Net::Connection * connection, double buffer)
 {
-    std::cout << "SERVER: Got an input, size: " << buffer_size(buffer) << " IP: " << connection->hostname << " Port: " << connection->port << "\n";
-    
-    auto response = buffer_create();
-    write_ushort(response, read_ushort(buffer)); // key
-    write_ushort(response, read_ushort(buffer)); // angle
-    write_ubyte(response, read_ubyte(buffer)); // distance
-    Net::send(connection, 1, SERVERMESSAGE::PLAYERINPUT, response);
-    buffer_destroy(response);
+    auto r = Sys::ServerPlayers::FromConnection(connection);
+    if(r != NULL)
+    {
+        auto player = r->player;
+        
+        if(player->physics_frames_since_input_cycle)
+        {
+            player->input.cycleInput();
+            player->physics_frames_since_input_cycle = 0;
+        }
+        auto netkeys = read_ushort(buffer);
+        auto netaimdir = read_ushort(buffer);
+        auto netaimdist = read_ubyte(buffer);
+        player->input.setInputsAsBitfield ( netkeys ) ;
+        player->input.aimDirection = netaimdir*360.0/0x10000;
+        player->input.aimDistance = netaimdist*2;
+        
+        auto response = buffer_create();
+        write_ushort(response, netkeys); // key
+        write_ushort(response, netaimdir); // angle
+        write_ubyte(response, netaimdist); // distance
+        Net::send(connection, 0, SERVERMESSAGE::PLAYERINPUT, response);
+        buffer_destroy(response);
+    }
+}
+
+void process_message_playerrequest(Net::Connection * connection, double buffer)
+{
+    if(Sys::ServerPlayers::FromConnection(connection) == NULL)
+    {
+        auto namelen = read_ubyte(buffer);
+        auto name = read_string(buffer, namelen);
+        auto player = new Sys::Player(Ent::New(), name);
+        Sys::ServerPlayers::Add(connection, player);
+        
+        player->spawn(Maps::width/2, Maps::height/2);
+        
+        auto response = buffer_create();
+        write_ubyte(buffer, namelen);
+        write_string(buffer, name);
+        write_ushort(buffer, Maps::width/2);
+        write_ushort(buffer, Maps::height/2);
+        write_ubyte(buffer, 1);
+        
+        Net::send(connection, 0, SERVERMESSAGE::SPAWNNEWPLAYER, response);
+        // TODO: Send to other clients
+        buffer_destroy(response);
+    }
 }
 
 bool main_init()
@@ -48,6 +90,7 @@ bool main_init()
     Net::init(4192);
     
     Net::assign ( 0, CLIENTMESSAGE::INPUT, &process_message_input );
+    Net::assign ( 0, CLIENTMESSAGE::PLAYERREQUEST, &process_message_playerrequest );
     
     Sys::tems.push_back(&sys_init);
     
