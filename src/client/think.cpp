@@ -2,6 +2,9 @@
 
 #include "clientdata.hpp"
 #include "../physics.hpp" // delta_is_too_damn_low
+#include "../network.hpp"
+#include "../netconst.hpp"
+#include "../blib.hpp"
 
 namespace Sys
 {
@@ -10,7 +13,16 @@ namespace Sys
         if(!Physicsers::delta_is_too_damn_low)
         {
             Sys::myinput.Update();
-            Sys::myself->input = Sys::myinput.myplayerinput; // TODO: Send over network
+            auto input = buffer_create();
+            write_ushort(input, Sys::myinput.myplayerinput.getInputsAsBitfield());
+            write_ushort(input, Sys::myinput.myplayerinput.aimDirection);
+            write_ubyte(input, Sys::myinput.myplayerinput.aimDistance);
+            Net::send(Sys::server, 0, CLIENTMESSAGE::INPUT, input);
+            buffer_destroy(input);
+            
+            Sys::speeds.push_back(Sys::myself->character->hspeed);
+            while ( Sys::speeds.size() > 300 )
+                Sys::speeds.erase ( speeds.begin() );
         }
         return 0;
     }

@@ -1,0 +1,7 @@
+namespace SERVERMESSAGE
+{
+    enum
+    {
+        PLAYERINPUT
+    }
+}

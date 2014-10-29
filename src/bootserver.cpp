@@ -4,10 +4,9 @@
 #include "rendering.hpp"
 #include "components/gamecomponents.hpp"
 #include "physics.hpp"
-#include "speed.hpp"
 #include "input.hpp"
 #include "network.hpp"
-
+#include "netconst.hpp"
 
 bool sys_init()
 {
@@ -17,7 +16,6 @@ bool sys_init()
     
     Sys::tems.push_back(&Sys::FrameLimit); // bengine
     #ifndef B_DEBUG_COREFRAMES
-        Sys::tems.push_back(&Net::Think);
         Sys::tems.push_back(&Sys::UpdateDelta); // physics
         Sys::tems.push_back(&Sys::Physics); // physics
     #endif
@@ -25,11 +23,30 @@ bool sys_init()
     return 1;
 }
 
+void process_message_input(Net::Connection * connection, double buffer)
+{
+    std::cout << "SERVER: Got an input, size: " << buffer_size(buffer) << " IP: " << connection->hostname << " Port: " << connection->port << "\n";
+    std::cout << read_string(buffer, buffer_size(buffer)) << "\n";
+    
+    auto response = buffer_create();
+    write_short(buffer, read_ushort(buffer));
+    write_short(buffer, read_ubyte(buffer));
+    Net::send(connection, 1, SERVERMESSAGE::PLAYERINPUT, response);
+    buffer_destroy(response);
+}
+
 bool main_init()
 {
-	speeds.push_back(0);
-	
+    if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
+        std::cout << "Could not initialize SDL: " << SDL_GetError() << std::endl;
+    SDL_PumpEvents();
+    
+    if(faucnet_init() < 0)
+        return 0;
+    
     Net::init(4192);
+    
+    Net::assign ( 0, CLIENTMESSAGE::INPUT, &process_message_input );
     
     Sys::tems.push_back(&sys_init);
     

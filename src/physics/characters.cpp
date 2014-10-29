@@ -244,9 +244,6 @@ namespace Sys
                 hspeed /= delta;
                 vspeed /= delta;
                 //puts("end frame");
-                Sys::speeds.push_back(hspeed);
-                while ( Sys::speeds.size() > 300 )
-                    Sys::speeds.erase ( speeds.begin() );
             };
             return false;
         }

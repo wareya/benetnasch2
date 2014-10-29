@@ -21,6 +21,10 @@ namespace Input
         bool last_inputs[NUMBER_INPUTS] = { };
         double aimDirection;
         double aimDistance;
+        
+        unsigned short getInputsAsBitfield();
+        void cycleInput();
+        void setInputsAsBitfield(unsigned short invalue);
     };
     struct ClientInput
     {

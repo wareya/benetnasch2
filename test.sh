@@ -1,10 +1,5 @@
 #!/bin/bash
 
-if [ "$OSTYPE" == "msys" ]; then
-    executable="benetnasch.exe"
-else
-    executable="benetnasch.out"
-fi
 
 mkdir -p obj
 mkdir -p obj/physics
@@ -13,7 +8,6 @@ mkdir -p obj/components
 mkdir -p obj/client
 source=(
  "src/blib.cpp"
- "src/rendering/drawspeedometer.cpp"
  "src/bengine.cpp"
  "src/components.cpp"
  "src/entity.cpp"
@@ -21,7 +15,6 @@ source=(
  "src/maps.cpp"
  "src/benetnasch.cpp"
  "src/physics.cpp"
- "src/rendering.cpp"
  "src/network.cpp"
  "src/components/backgrounddrawable.cpp"
  "src/components/boxdrawable.cpp"
@@ -34,21 +27,33 @@ source=(
  "src/components/player.cpp"
  "src/physics/characters.cpp"
  "src/physics/bullets.cpp"
- "src/physics/subroutines.cpp"
- "src/rendering/drawbackground.cpp"
- "src/rendering/drawboxes.cpp"
- "src/rendering/drawbullets.cpp"
- "src/rendering/drawcharacterdebug.cpp"
- "src/rendering/drawrotatetextured.cpp"
- "src/rendering/drawscreentext.cpp"
- "src/rendering/drawtextured.cpp")
+ "src/physics/subroutines.cpp")
 
 if [ "$1" == "server" ] || [ "$1" == "-s" ] || [ "$2" == "server" ]; then
+    if [ "$OSTYPE" == "msys" ]; then
+        executable="server.exe"
+    else
+        executable="server.out"
+    fi
     source+=('src/bootserver.cpp')
 else
+    if [ "$OSTYPE" == "msys" ]; then
+        executable="benetnasch.exe"
+    else
+        executable="benetnasch.out"
+    fi
     source+=('src/bootclient.cpp')
     source+=('src/client/clientdata.cpp')
     source+=('src/client/think.cpp')
+    source+=('src/rendering/drawbackground.cpp')
+    source+=('src/rendering/drawboxes.cpp')
+    source+=('src/rendering/drawbullets.cpp')
+    source+=('src/rendering/drawcharacterdebug.cpp')
+    source+=('src/rendering/drawrotatetextured.cpp')
+    source+=('src/rendering/drawscreentext.cpp')
+    source+=('src/rendering/drawtextured.cpp')
+    source+=('src/rendering/drawspeedometer.cpp')
+    source+=('src/rendering.cpp')
 fi
 
 if [ "$OSTYPE" == "msys" ]; then
@@ -58,7 +63,7 @@ if [ "$OSTYPE" == "msys" ]; then
     sdliflags="`sdl2-config --cflags`"
     sdllflags="`sdl2-config --static-libs` -lSDL2_image -static"
     cflags="-std=c++11 -Wall -pedantic -Iinclude $sdliflags -I${forceinclude}/include"
-    linker="-L /usr/lib -static-libstdc++ -static-libgcc $sdllflags"
+    linker="-L /usr/lib -static-libstdc++ -static-libgcc $sdllflags -mconsole -mwindows"
 
     if hash sdl2-config; then
         cat /dev/null;

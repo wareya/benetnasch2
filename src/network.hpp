@@ -1,3 +1,6 @@
+#ifndef INCLUDE_NETWORK
+#define INCLUDE_NETWORK
+
 #include <vector>
 #include <unordered_map>
 #include <string>
@@ -62,3 +65,5 @@ namespace Net
     void connect ( Connection * connection );
     int assign ( bool droppable, unsigned short message, processor );
 }
+
+#endif // guard

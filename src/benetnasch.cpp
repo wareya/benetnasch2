@@ -11,9 +11,11 @@
 #include "bengine.hpp"
 #include "boot.hpp"
 
+#include <cstdio>
 
 int main(int argc, char *argv[])
 {
+    puts("booting");
     if (main_init())
         return 1;
     
