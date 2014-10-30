@@ -6,6 +6,7 @@ mkdir -p obj/physics
 mkdir -p obj/rendering
 mkdir -p obj/components
 mkdir -p obj/client
+mkdir -p obj/server
 source=(
  "src/blib.cpp"
  "src/bengine.cpp"
@@ -37,6 +38,7 @@ if [ "$1" == "server" ] || [ "$1" == "-s" ] || [ "$2" == "server" ]; then
         executable="server.out"
     fi
     source+=('src/bootserver.cpp')
+    source+=('src/server/think.cpp')
 else
     if [ "$OSTYPE" == "msys" ]; then
         executable="benetnasch.exe"

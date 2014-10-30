@@ -20,7 +20,7 @@ namespace Sys
             unsigned i = 0;
             for(; i < ServerPlayers.size(); ++i)
             {
-                if ( pid == ServerPlayers[i]->id )
+                if ( ServerPlayers[i]->id == pid )
                     break;
             }
             if(i < ServerPlayers.size())
@@ -35,6 +35,16 @@ namespace Sys
             for(; i < ServerPlayers.size(); ++i)
             {
                 if ( ServerPlayers[i]->connection == connection )
+                    return ServerPlayers[i];
+            }
+            return NULL;
+        }
+        ServerPlayer * FromPid(playerid pid)
+        {
+            unsigned i = 0;
+            for(; i < ServerPlayers.size(); ++i)
+            {
+                if ( ServerPlayers[i]->id == pid )
                     return ServerPlayers[i];
             }
             return NULL;

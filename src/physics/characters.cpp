@@ -13,7 +13,6 @@ namespace Sys
             {
                 for(auto player : Sys::Players)
                 {
-                    puts("RUNNING A CHARACTER PHYSICS");
                     auto character = player->character;
                     if(!character)
                         continue;

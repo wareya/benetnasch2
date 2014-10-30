@@ -14,7 +14,8 @@ namespace SERVERMESSAGE
     enum
     {
         PLAYERINPUT,
-        SPAWNNEWPLAYER
+        SPAWNNEWPLAYER,
+        PLAYERPOSITIONS
     };
 }
 namespace MESSAGE

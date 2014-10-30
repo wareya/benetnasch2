@@ -6,7 +6,7 @@
 
 namespace Sys
 {
-    typedef int playerid;
+    typedef unsigned char playerid;
     struct ServerPlayer
     {
         Net::Connection * connection;
@@ -15,9 +15,11 @@ namespace Sys
     };
     namespace ServerPlayers
     {
+        extern std::vector<ServerPlayer*> ServerPlayers;
         playerid Add(Net::Connection * connection, Player * player);
         void Remove(playerid);
         ServerPlayer * FromConnection(Net::Connection * connection);
+        ServerPlayer * FromPid(playerid pid);
     }
 }
 

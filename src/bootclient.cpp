@@ -11,6 +11,7 @@
 #include "client/clientdata.hpp"
 #include "client/think.hpp"
 #include "physics.hpp"
+#include "serverplayer.hpp"
 
 bool sys_init()
 {
@@ -26,9 +27,9 @@ bool sys_init()
     #endif
     
     Sys::tems.push_back(&Sys::FrameLimit); // bengine
-    Sys::tems.push_back(&Net::think);
     #ifndef B_DEBUG_COREFRAMES
         Sys::tems.push_back(&Sys::UpdateDelta); // physics
+        Sys::tems.push_back(&Net::think);
     #endif
     Sys::tems.push_back(&Sys::SDLEvents); // bengine
     #ifndef B_DEBUG_COREFRAMES
@@ -66,7 +67,28 @@ void process_message_spawnnewplayer(Net::Connection * connection, double buffer)
         player->character->myself = true;
         Sys::myself = player;
     }
+    Sys::ServerPlayers::Add(nullptr, player);
     std::cout << "Spawned player, ptr " << Sys::myself << "\n";
+}
+
+void process_message_playerpositions(Net::Connection * connection, double buffer)
+{
+    for(auto i = 0; i < buffer_size(buffer)/5; i++) /*byte + short + short*/
+    {
+        auto pid = read_ubyte(buffer);
+        auto serverplayer = Sys::ServerPlayers::FromPid(pid);
+        std::cout << "pid: " << pid << "\n";
+        if(serverplayer)
+        {
+            auto character = serverplayer->player->character;
+            if(character)
+            {
+                auto position = character->position;
+                position->x = read_ushort(buffer)/10;
+                position->y = read_ushort(buffer)/10;
+            }
+        }
+    }
 }
 
 bool main_init()
@@ -102,6 +124,7 @@ bool main_init()
     
     Net::assign ( 1, SERVERMESSAGE::PLAYERINPUT, &process_message_playerinput );
     Net::assign ( 0, SERVERMESSAGE::SPAWNNEWPLAYER, &process_message_spawnnewplayer );
+    Net::assign ( 1, SERVERMESSAGE::PLAYERPOSITIONS, &process_message_playerpositions );
     
     Sys::tems.push_back(&sys_init);
     

@@ -9,18 +9,21 @@
 #include "netconst.hpp"
 #include "serverplayer.hpp"
 #include "components/player.hpp"
+#include "server/think.hpp"
 
 bool sys_init()
 {
+    Sys::lastQuickUpdate = Time::get_us();
     #ifndef B_DEBUG_COREFRAMES
         Maps::load_wallmask("wallmask.png");
     #endif
     
     Sys::tems.push_back(&Sys::FrameLimit); // bengine
-    Sys::tems.push_back(&Net::think);
     #ifndef B_DEBUG_COREFRAMES
         Sys::tems.push_back(&Sys::UpdateDelta); // physics
+        Sys::tems.push_back(&Net::think);
         Sys::tems.push_back(&Sys::Physics); // physics
+        Sys::tems.push_back(&Sys::ServerThink);
     #endif
     
     return 1;
@@ -28,7 +31,6 @@ bool sys_init()
 
 void process_message_input(Net::Connection * connection, double buffer)
 {
-    puts("Handling input");
     auto r = Sys::ServerPlayers::FromConnection(connection);
     if(r != NULL)
     {

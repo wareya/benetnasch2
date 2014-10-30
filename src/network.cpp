@@ -2,8 +2,6 @@
 #include "blib.hpp"
 #include <string>
 
-#define B_NET_DEBUG_PRINTPACK
-
 #if defined(B_NET_DEBUG_PRINTPACK) || defined(B_NET_DEBUG_CONNECTION)
 #include <iostream>
 #endif
@@ -241,7 +239,6 @@ namespace Net
                         remote->last_undroppable_packet = id;
                     else
                     {
-                        puts("Message out of order");
                         break; // out of order (late)
                     }
                 }
@@ -255,13 +252,8 @@ namespace Net
                         write_buffer_part(bulk, local_socket, socket_receivebuffer_size(local_socket));
                         handlers[message](remote, bulk);
                         buffer_destroy(bulk);
-                        puts("Did handle");
                     }
-                    else
-                        std::cout << "Null handler for receiving message " << message << "\n";
                 }
-                else
-                    std::cout << "No handler for receiving message " << message << "\n";
                 break;
             }
             case ACKNOWLEDGMENT:
