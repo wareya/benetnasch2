@@ -204,11 +204,13 @@ namespace Net
             case MESSAGE_DROPPABLE:
             {
                 auto id = read_uint(local_socket);
+                auto message = read_ushort(local_socket);
                 
                 #ifdef B_NET_DEBUG_PRINTPACK
                     std::cout << "Got a (droppable: " << type << ") message from "
                               << remote_ip << ":" << remote_port
-                              << " headed " << id << "\n";
+                              << " ided " << id 
+                              << " messaged " << message << "\n";
                 #endif
                 
                 // ACK undroppable packets immediately
@@ -238,11 +240,13 @@ namespace Net
                     if(id > remote->last_droppable_packet)
                         remote->last_undroppable_packet = id;
                     else
+                    {
+                        puts("Message out of order");
                         break; // out of order (late)
+                    }
                 }
                 
-                auto message = read_ushort(local_socket);
-                message = unsigned(message) & (unsigned(type) << (sizeof(unsigned short)*8));
+                message = unsigned(message) | (unsigned(type) << (sizeof(unsigned short)*8));
                 if(handlers.find(message) != handlers.end())
                 {
                     if(handlers[message] != NULL)
@@ -251,8 +255,13 @@ namespace Net
                         write_buffer_part(bulk, local_socket, socket_receivebuffer_size(local_socket));
                         handlers[message](remote, bulk);
                         buffer_destroy(bulk);
+                        puts("Did handle");
                     }
+                    else
+                        std::cout << "Null handler for receiving message " << message << "\n";
                 }
+                else
+                    std::cout << "No handler for receiving message " << message << "\n";
                 break;
             }
             case ACKNOWLEDGMENT:
@@ -318,7 +327,7 @@ namespace Net
         write_buffer(local_socket, temp);
         
         #ifdef B_NET_DEBUG_PRINTPACK
-            std::cout << "About to send " << buffer_size(temp) << " bytes.\n";
+            std::cout << "About to send " << buffer_size(temp) << " bytes with header " << message << ".\n";
         #endif
         
         if(connection->ready)
@@ -339,10 +348,11 @@ namespace Net
     
     int assign ( bool droppable, unsigned short message, processor processor )
     {
+        unsigned int key = (droppable << (sizeof(unsigned short)*8)) | message;
         #ifdef B_NET_DEBUG_PRINTPACK
         std::cout << "Trying to bind a processor to " << message << "\n";
+        std::cout << "Key: " << key << "\n";
         #endif
-        unsigned int key = (droppable << (sizeof(unsigned short)*8)) & message;
         // Possible conditions for assignment:
         // - Handle already taken by null function
         // - Handle not taken

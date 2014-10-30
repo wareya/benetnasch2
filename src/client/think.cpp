@@ -24,17 +24,17 @@ namespace Sys
             }
             if(!Physicsers::delta_is_too_damn_low)
             {
-                Sys::myinput.Update();
-                
-                auto input = buffer_create();
-                write_ushort(input, Sys::myinput.myplayerinput.getInputsAsBitfield());
-                write_ushort(input, Sys::myinput.myplayerinput.aimDirection/360.0*0x10000);
-                write_ubyte(input, Sys::myinput.myplayerinput.aimDistance);
-                Net::send(Sys::server, 0, CLIENTMESSAGE::INPUT, input);
-                buffer_destroy(input);
-                
                 if(Sys::myself)
                 {
+                    Sys::myinput.Update();
+                    
+                    auto input = buffer_create();
+                    write_ushort(input, Sys::myinput.myplayerinput.getInputsAsBitfield());
+                    write_ushort(input, Sys::myinput.myplayerinput.aimDirection/360.0*0x10000);
+                    write_ubyte(input, Sys::myinput.myplayerinput.aimDistance);
+                    Net::send(Sys::server, 0, CLIENTMESSAGE::INPUT, input);
+                    buffer_destroy(input);
+                    
                     if(Sys::myself->character)
                     {
                         Sys::speeds.push_back(Sys::myself->character->hspeed);

@@ -55,13 +55,23 @@ void process_message_playerinput(Net::Connection * connection, double buffer)
 
 void process_message_spawnnewplayer(Net::Connection * connection, double buffer)
 {
-    puts("spawning new player");
-    auto player = new Sys::Player(Ent::New(), read_string(buffer, read_ubyte(buffer)));
+    auto len = read_ubyte(buffer);
+    auto name = read_string(buffer, len);
+    auto player = new Sys::Player(Ent::New(), name);
+    std::cout << "spawning new player " << name << "\n";
     
-    player->spawn(read_ushort(buffer), read_ushort(buffer));
-    player->character->myself = read_ubyte(buffer);
-    if(player->character->myself)
+    auto x = read_ushort(buffer);
+    auto y = read_ushort(buffer);
+    auto am = read_ubyte(buffer);
+    
+    player->spawn(x, y);
+    std::cout << "isme: " << am << "\n";
+    if(am)
+    {
+        player->character->myself = true;
         Sys::myself = player;
+    }
+    std::cout << "Spawned player, ptr " << Sys::myself << "\n";
 }
 
 bool main_init()

@@ -28,6 +28,7 @@ bool sys_init()
 
 void process_message_input(Net::Connection * connection, double buffer)
 {
+    puts("Handling input");
     auto r = Sys::ServerPlayers::FromConnection(connection);
     if(r != NULL)
     {
@@ -68,11 +69,11 @@ void process_message_playerrequest(Net::Connection * connection, double buffer)
         player->spawn(Maps::width/2, Maps::height/2);
         
         auto response = buffer_create();
-        write_ubyte(buffer, namelen);
-        write_string(buffer, name);
-        write_ushort(buffer, Maps::width/2);
-        write_ushort(buffer, Maps::height/2);
-        write_ubyte(buffer, 1);
+        write_ubyte(response, namelen);
+        write_string(response, name);
+        write_ushort(response, Maps::width/2);
+        write_ushort(response, Maps::height/2);
+        write_ubyte(response, 1);
         
         Net::send(connection, 0, SERVERMESSAGE::SPAWNNEWPLAYER, response);
         // TODO: Send to other clients
