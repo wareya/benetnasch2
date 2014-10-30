@@ -43,11 +43,6 @@ bool sys_init()
 
 void process_message_playerinput(Net::Connection * connection, double buffer)
 {
-    if(Sys::myself->physics_frames_since_input_cycle)
-    {
-        Sys::myself->input.cycleInput();
-        Sys::myself->physics_frames_since_input_cycle = 0;
-    }
     Sys::myself->input.setInputsAsBitfield ( read_ushort(buffer) ) ;
     Sys::myself->input.aimDirection = read_ushort(buffer)*360.0/0x10000;
     Sys::myself->input.aimDistance = read_ubyte(buffer)*2;

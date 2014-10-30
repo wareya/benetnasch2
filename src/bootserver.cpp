@@ -34,11 +34,6 @@ void process_message_input(Net::Connection * connection, double buffer)
     {
         auto player = r->player;
         
-        if(player->physics_frames_since_input_cycle)
-        {
-            player->input.cycleInput();
-            player->physics_frames_since_input_cycle = 0;
-        }
         auto netkeys = read_ushort(buffer);
         auto netaimdir = read_ushort(buffer);
         auto netaimdist = read_ubyte(buffer);

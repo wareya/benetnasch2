@@ -12,6 +12,7 @@ namespace Sys
         spawntimer = -1;
         physics_frames_since_input_cycle = 0;
         Players.add(this);
+        puts("MAKING A PLAYER");
     }
     Player::~Player()
     {

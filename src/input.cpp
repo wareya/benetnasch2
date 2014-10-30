@@ -25,7 +25,6 @@ namespace Input
         for (short i = 0; i < NUMBER_INPUTS; i++)
         {
             last_inputs[i] = inputs[i];
-            inputs[i] = 0;
         }
     }
     unsigned short PlayerInput::getInputsAsBitfield()
@@ -64,6 +63,9 @@ namespace Input
     {
         auto mousebitmask = SDL_GetMouseState(&mx, &my);
         myplayerinput.cycleInput();
+        
+        for (int i = 0; i < NUMBER_INPUTS; i++)
+            myplayerinput.inputs[i] = 0;
         for (auto bind : keybindings)
         {
             if(corestate[bind.key])

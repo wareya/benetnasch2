@@ -13,11 +13,10 @@ namespace Sys
             {
                 for(auto player : Sys::Players)
                 {
+                    puts("RUNNING A CHARACTER PHYSICS");
                     auto character = player->character;
                     if(!character)
                         continue;
-                        
-                    player->physics_frames_since_input_cycle += 1;
                     /*
                      *  predef
                      */
@@ -245,6 +244,8 @@ namespace Sys
                     hspeed /= delta;
                     vspeed /= delta;
                     //puts("end frame");
+                    
+                    player->input.cycleInput();
                 }
             }
             return false;
