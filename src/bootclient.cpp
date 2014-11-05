@@ -51,6 +51,7 @@ void process_message_playerinput(Net::Connection * connection, double buffer)
 
 void process_message_spawnnewplayer(Net::Connection * connection, double buffer)
 {
+    auto id = read_ubyte(buffer);
     auto len = read_ubyte(buffer);
     auto name = read_string(buffer, len);
     auto player = new Sys::Player(Ent::New(), name);
@@ -67,7 +68,7 @@ void process_message_spawnnewplayer(Net::Connection * connection, double buffer)
         player->character->myself = true;
         Sys::myself = player;
     }
-    Sys::ServerPlayers::Add(nullptr, player);
+    Sys::ServerPlayers::AddFrom(nullptr, player, id);
     std::cout << "Spawned player, ptr " << Sys::myself << "\n";
 }
 
@@ -83,10 +84,37 @@ void process_message_playerpositions(Net::Connection * connection, double buffer
             auto character = serverplayer->player->character;
             if(character)
             {
-                auto position = character->position;
-                position->x = read_ushort(buffer)/10;
-                position->y = read_ushort(buffer)/10;
+                character->position->x = read_ushort(buffer)/10;
+                character->position->y = read_ushort(buffer)/10;
             }
+        }
+    }
+}
+
+void process_message_playerlist(Net::Connection * connection, double buffer)
+{
+    auto myid = read_ubyte(buffer);
+    while(buffer_bytes_left(buffer))
+    {
+        auto id = read_ubyte(buffer);
+        
+        auto len = read_ubyte(buffer);
+        auto name = read_string(buffer, len);
+        auto player = new Sys::Player(Ent::New(), name);
+        std::cout << "in list, spawning new player " << name << "\n";
+        Sys::ServerPlayers::AddFrom(nullptr, player, id);
+        
+        if(read_ubyte(buffer)) // has character
+        {
+            auto x = read_ushort(buffer)/10;
+            auto y = read_ushort(buffer)/10;
+            player->spawn(x, y);
+        }
+        
+        if(id == myid)
+        {
+            Sys::myself = player;
+            player->character->myself = true;
         }
     }
 }
@@ -125,6 +153,7 @@ bool main_init()
     Net::assign ( 1, SERVERMESSAGE::PLAYERINPUT, &process_message_playerinput );
     Net::assign ( 0, SERVERMESSAGE::SPAWNNEWPLAYER, &process_message_spawnnewplayer );
     Net::assign ( 1, SERVERMESSAGE::PLAYERPOSITIONS, &process_message_playerpositions );
+    Net::assign ( 0, SERVERMESSAGE::PLAYERLIST, &process_message_playerlist );
     
     Sys::tems.push_back(&sys_init);
     

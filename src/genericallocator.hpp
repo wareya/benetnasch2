@@ -16,14 +16,6 @@ struct GenericAllocator
             auto id = LowestUnused;
             Used.insert(id); //logn
             
-            #if DEBUG_IDALLOCATOR
-                if(Used.find(LowestUnused)) // logn
-                {
-                    std::cout << "Error: Former LowestUnused set was invalid!";
-                    return -1;
-                }
-            #endif
-            
             // We need to figure out what the next lowest unused will be
             // There aren't any freed ones to use, so we have to do it hard
             if (LowestUnused >= *Used.end()) // lowest unused is outside of used range, free to increment LowestUnused
@@ -57,6 +49,30 @@ struct GenericAllocator
                 }
                 return id;
             }
+        }
+    }
+    // attempt to forcefully allocate a specific ID
+    // returns whether successful
+    bool ForceNew(T id)
+    {
+        if(Exists(id))
+            return false;
+        else
+        {
+            Used.insert(id); //logn
+            if (Freed.size() == 0 and LowestUnused == id)
+            {
+                LowestUnused = *Used.end() + 1;
+            }
+            else if (Freed.find(id))
+            {
+                Freed.remove(id);
+            }
+            else
+            {
+                puts("Critical error synchronizing internal state in ForceNew!");
+            }
+            return true;
         }
     }
     // free a given ID -- returns false if id doesn't exist

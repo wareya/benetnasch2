@@ -9,11 +9,17 @@ namespace Sys
         std::vector<ServerPlayer*> ServerPlayers;
         GenericAllocator<playerid> pids;
         
-        playerid Add(Net::Connection * connection, Player * player)
+        ServerPlayer * Add(Net::Connection * connection, Player * player)
         {
             auto r = new ServerPlayer({connection, player, pids.New()});
             ServerPlayers.push_back(r);
-            return r->id;
+            return r;
+        }
+        ServerPlayer * AddFrom(Net::Connection * connection, Player * player, playerid id)
+        {
+            auto r = new ServerPlayer({connection, player, pids.ForceNew(id)});
+            ServerPlayers.push_back(r);
+            return r;
         }
         void Remove(int pid)
         {

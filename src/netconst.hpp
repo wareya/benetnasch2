@@ -15,7 +15,8 @@ namespace SERVERMESSAGE
     {
         PLAYERINPUT,
         SPAWNNEWPLAYER,
-        PLAYERPOSITIONS
+        PLAYERPOSITIONS,
+        PLAYERLIST
     };
 }
 namespace MESSAGE

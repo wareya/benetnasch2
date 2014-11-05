@@ -52,29 +52,59 @@ void process_message_input(Net::Connection * connection, double buffer)
     }
 }
 
+double build_message_playerlist(Sys::ServerPlayer * targetplayer, double buffer)
+{
+    write_ubyte(buffer, targetplayer->id);
+    for(auto serverplayer : Sys::ServerPlayers::ServerPlayers)
+    {
+        write_ubyte(buffer, serverplayer->id);
+        write_ubyte(buffer, serverplayer->player->name.size());
+        std::string asdf = serverplayer->player->name;
+        asdf.resize(255, '\0');
+        write_string(buffer, asdf.data());
+        if(serverplayer->player->character)
+        {
+            write_ubyte(buffer, 1);
+            write_ushort(buffer, serverplayer->player->character->position->x*10);
+            write_ushort(buffer, serverplayer->player->character->position->y*10);
+        }
+        else
+            write_ubyte(buffer, 0);
+    }
+    return buffer;
+}
+
 void process_message_playerrequest(Net::Connection * connection, double buffer)
 {
-    puts("wanna tell the client to spawn a new player");
     if(Sys::ServerPlayers::FromConnection(connection) == NULL)
     {
-        puts("telling client to spawn a player");
         auto namelen = read_ubyte(buffer);
         auto name = read_string(buffer, namelen);
         auto player = new Sys::Player(Ent::New(), name);
-        Sys::ServerPlayers::Add(connection, player);
+        auto serverplayer = Sys::ServerPlayers::Add(connection, player);
         
         player->spawn(Maps::width/2, Maps::height/2);
         
         auto response = buffer_create();
+        write_ubyte(response, serverplayer->id);
         write_ubyte(response, namelen);
         write_string(response, name);
         write_ushort(response, Maps::width/2);
         write_ushort(response, Maps::height/2);
-        write_ubyte(response, 1);
+        write_ubyte(response, 0);
         
-        Net::send(connection, 0, SERVERMESSAGE::SPAWNNEWPLAYER, response);
-        // TODO: Send to other clients
-        buffer_destroy(response);
+        // tell other players about the new player
+        for(auto remote : Sys::ServerPlayers::ServerPlayers)
+        {
+            if(remote != serverplayer)
+                Net::send(serverplayer->connection, 0, SERVERMESSAGE::SPAWNNEWPLAYER, response);
+        }
+        buffer_clear(response);
+        
+        // tell the new player about everyone, including theirself
+        build_message_playerlist(serverplayer, response);
+        Net::send(connection, 0, SERVERMESSAGE::PLAYERLIST, response);
+        buffer_clear(response);
     }
 }
 
