@@ -8,21 +8,21 @@
 
 namespace Net
 {
-    enum {
+    enum { // low-level networking header enumerations
         MESSAGE_UNDROPPABLE,
         MESSAGE_DROPPABLE,
         ACKNOWLEDGMENT,
         CONNECTION_REQUEST,
         CONNECTION_ACKNOWLEDGED
     };
-    extern double local_socket;
-    struct Message
+    extern double local_socket; // socket with which to receive/send datagrams
+    struct Message // Type containing information representing a high-level message
     {
-        long id;
-        bool droppable;
-        unsigned short message;
-        double buffer;
-        double sendtime;
+        long id; // chronological sequence indicator
+        bool droppable; // whether this message should use the droppable or the undroppable system
+        unsigned short message; // type of message (unique between whether droppable)
+        double buffer; // faucnet buffer reference containing information
+        double sendtime; // time at which the message was sent
     };
     
     struct Connection

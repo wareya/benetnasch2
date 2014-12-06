@@ -86,6 +86,8 @@ int faucnet_init()
     socket_has_error    = (SOCKET_HAS_ERROR)    SDL_LoadFunction(obj, "socket_has_error");
     socket_error        = (SOCKET_ERROR)        SDL_LoadFunction(obj, "socket_error");
     
+    read_hex = (READ_HEX) SDL_LoadFunction(obj, "read_hex");
+    
     
     if (!(dllStartup && dllShutdown
        && tcp_connect && tcp_listen && udp_bind && socket_connecting && socket_accept && socket_destroy && socket_destroy_abortive

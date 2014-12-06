@@ -74,6 +74,8 @@ void process_message_spawnnewplayer(Net::Connection * connection, double buffer)
 
 void process_message_playerpositions(Net::Connection * connection, double buffer)
 {
+    if(buffer_bytes_left(buffer) != 5)
+        puts("Bad length of playerpositions!");
     for(auto i = 0; i < buffer_size(buffer)/5; i++) /*byte + short + short*/
     {
         auto pid = read_ubyte(buffer);

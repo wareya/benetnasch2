@@ -66,7 +66,7 @@ typedef double (*BUFFER_SIZE)(double); // size: buffer
 MAYBEEXTERN BUFFER_SIZE buffer_size;
 typedef double (*BUFFER_BYTES_LEFT)(double); // size: buffer|socketReceiveBuf
 MAYBEEXTERN BUFFER_BYTES_LEFT buffer_bytes_left;
-typedef double (*BUFFER_SET_READPOS)(double); // void: buffer|socketReceiveBuf
+typedef double (*BUFFER_SET_READPOS)(double, double); // void: buffer|socketReceiveBuf
 MAYBEEXTERN BUFFER_SET_READPOS buffer_set_readpos;
 
 typedef double (*WRITE_UBYTE)(double, double); // void: buffer|SocketSendBuf, real
@@ -150,6 +150,10 @@ typedef double (*SOCKET_HAS_ERROR)(double); // haserror: socket|acceptor
 MAYBEEXTERN SOCKET_HAS_ERROR socket_has_error;
 typedef const char * (*SOCKET_ERROR)(double); // error: socket|acceptor
 MAYBEEXTERN SOCKET_ERROR socket_error;
+
+
+typedef const char * (*READ_HEX)(double, double); // error: socket|acceptor
+MAYBEEXTERN READ_HEX read_hex;
 
 int faucnet_init();
 void faucnet_exit();

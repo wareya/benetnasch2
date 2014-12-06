@@ -8,9 +8,11 @@
 
 void trash_buffer(double socket) // discard socket buffer by sending to port 9 TODO: VERIFY (duplicated TODO)
 {
+    // own function for easy removal in the future
     udp_send(socket, "127.0.0.1", 9);
 }
 
+// wrapper in case things need to be logged universally
 double udp_send_wrapper(double withandfrom, const char * hostname, double port)
 {
     auto x = udp_send(withandfrom, hostname, port);
@@ -23,7 +25,9 @@ double udp_send_wrapper(double withandfrom, const char * hostname, double port)
 namespace Net
 {
     double local_socket;
+    // list of external connections
     std::vector<Connection*> connections;
+    // assignment map of message id to function pointer which processes messages with that id
     std::unordered_map<unsigned int, processor> handlers;
     
     Connection::Connection ( const char * hostname, int port )
@@ -40,6 +44,7 @@ namespace Net
         hostname_lookup = ip_lookup_create(hostname);
     }
     
+    // if relevant, send a connection request to the desired remote host (client code)
     void Connection::send_or_resend_connection_request()
     {
         if(ready)
@@ -61,6 +66,7 @@ namespace Net
         }
     }
     
+    // create local socket listening on given port
     bool init ( int port )
     {
         #if defined(B_NET_DEBUG_PRINTPACK) || defined(B_NET_DEBUG_CONNECTION)
@@ -70,12 +76,14 @@ namespace Net
         return 0;
     }
     
+    // shuffle internal state as if handling events
     bool think ( )
     {
         trash_buffer(local_socket);
+        // things regarding remote connections...
         for(auto connection : connections)
         {
-            // update hostname lookups
+            // update hostname lookups (typically just for the server)
             if(connection->hostname_lookup > 0) // hostname lookup is running or recently finished
             {
                 if(ip_lookup_ready(connection->hostname_lookup)) // hostname lookup finished
@@ -90,7 +98,7 @@ namespace Net
                     connection->hostname_lookup = -1;
                 }
             }
-            
+            // check for probably-dropped messages and resend them
             for(auto message : connection->undroppable_send_queue)
             {
                 if(Time::get_us() - message->sendtime > 1000*200) // TODO: replace hardcoded 200 ms with ping*1.5 or something
@@ -101,9 +109,10 @@ namespace Net
                     message->sendtime = Time::get_us();
                     write_buffer(local_socket, message->buffer);
                     udp_send_wrapper(local_socket, connection->hostname.c_str(), connection->port);
+                    std::cout << "resend " << read_hex(message->buffer, buffer_size(message->buffer)) << "\n";
                 }
             }
-            
+            // resend connection request if we haven't heard back for the first time yet
             if(!connection->ready)
             {
                 if (Time::get_us() - connection->connection_send_time > 1000*1000) // resend every second until we get an ack
@@ -125,8 +134,12 @@ namespace Net
             connection/acknowledgement
             {}
         */
+        
+        // Read out received messages
         while(udp_receive(local_socket))
         {
+            std::cout << "rec " << read_hex(local_socket, socket_receivebuffer_size(local_socket)) << "\n";
+            buffer_set_readpos(local_socket, 0);
             auto remote_ip = socket_remote_ip(local_socket);
             auto remote_port = socket_remote_port(local_socket);
             
@@ -138,6 +151,7 @@ namespace Net
             
             Connection * remote = NULL;
             // TODO: There has really truly honestly GOT to be a much better way to do this
+            // find connection (if any) associated with message source
             for (auto connection : connections)
             {
                 #ifdef B_NET_DEBUG_PRINTPACK
@@ -179,7 +193,7 @@ namespace Net
                         std::cout << "Stored as: " << connection->hostname << ":" << connection->port << "\n";
                     #endif
                     connections.push_back(connection);
-                    ip_lookup_destroy(connection->hostname_lookup); // remote messages should already have known IPs
+                    ip_lookup_destroy(connection->hostname_lookup); // remote hostname is already an IP
                     connection->hostname_lookup = -1;
                     connection->ready = true;
                 }
@@ -196,8 +210,10 @@ namespace Net
                 udp_send_wrapper(local_socket, remote_ip, remote_port);
             }
             
+            // if we've fallen through to here it's a "message"
             switch(int(type))
             {
+            // high-level messages
             case MESSAGE_UNDROPPABLE:
             case MESSAGE_DROPPABLE:
             {
@@ -229,9 +245,9 @@ namespace Net
                         #ifdef B_NET_DEBUG_PRINTPACK
                             puts("Ignoring message");
                         #endif
-                        break; // out of order (late) or previous dropped
+                        break; // duplicate or dependent on late/dropped message
                     }
-                    // TODO FUTURE: Cache previously ignored but advanced messages so that catching up is faster
+                    // TODO FUTURE: Cache packets ignored for being before their predecessors so that catching up is faster
                 }
                 if(type == MESSAGE_DROPPABLE)
                 {
@@ -242,7 +258,7 @@ namespace Net
                         break; // out of order (late)
                     }
                 }
-                
+                // convert message and droppable to handler ID TODO: pure function
                 message = unsigned(message) | (unsigned(type) << (sizeof(unsigned short)*8));
                 if(handlers.find(message) != handlers.end())
                 {
@@ -256,6 +272,7 @@ namespace Net
                 }
                 break;
             }
+            // acknowledgment of high-level message
             case ACKNOWLEDGMENT:
             {
                 #ifdef B_NET_DEBUG_PRINTPACK
@@ -295,9 +312,10 @@ namespace Net
         return 0;
     }
     
-    
+    // high-level function to send a message according to parameters
     void send ( Connection * connection, bool droppable, unsigned short message, double buffer )
     {
+        // blank buffer for porpoises
         double temp = buffer_create();
         // write up header etc to temp buffer
         write_ubyte(temp, droppable);
@@ -332,9 +350,16 @@ namespace Net
         #endif
             
         if(!droppable) // we want to store our send buffer (rather than the raw buffer, for simplicity's sake) for resending
+        {
             connection->undroppable_send_queue.push_back(new Message ({connection->sent_undroppable_packet-1, droppable, message, temp, Time::get_us()}));
+            std::cout << "send " << read_hex(temp, buffer_size(temp)) << "\n";
+            buffer_set_readpos(temp, 0);
+        }
         else // think handles clean of undroppables, but we can trash the droppables here
+        {
+            std::cout << "send " << read_hex(temp, buffer_size(temp)) << "\n";
             buffer_destroy(temp);
+        }
     }
     
     
