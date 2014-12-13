@@ -4,54 +4,29 @@
 
 namespace Sys
 {
-    namespace ServerPlayers
+    namespace PlayerList
     {
-        std::vector<ServerPlayer*> ServerPlayers;
-        GenericAllocator<playerid> pids;
+        std::vector<ServerPlayer*> Slots;
         
-        ServerPlayer * Add(Net::Connection * connection, Player * player)
+        unsigned AddPlayer(Net::Connection * connection, Player * player)
         {
-            auto r = new ServerPlayer({connection, player, pids.New()});
-            ServerPlayers.push_back(r);
-            return r;
+            auto r = new ServerPlayer({connection, player});
+            Slots.push_back(r);
+            return Slots.size()-1;
         }
-        ServerPlayer * AddFrom(Net::Connection * connection, Player * player, playerid id)
+        void Remove(unsigned int pid)
         {
-            auto r = new ServerPlayer({connection, player, pids.ForceNew(id)});
-            ServerPlayers.push_back(r);
-            return r;
-        }
-        void Remove(int pid)
-        {
-            unsigned i = 0;
-            for(; i < ServerPlayers.size(); ++i)
-            {
-                if ( ServerPlayers[i]->id == pid )
-                    break;
-            }
-            if(i < ServerPlayers.size())
-            {
-                pids.Free(pid);
-                ServerPlayers.erase(ServerPlayers.begin()+i);
-            }
+            if ( pid > Slots.size() )
+                return;
+            Slots.erase(Slots.begin()+pid);
         }
         ServerPlayer * FromConnection(Net::Connection * connection)
         {
             unsigned i = 0;
-            for(; i < ServerPlayers.size(); ++i)
+            for(; i < Slots.size(); ++i)
             {
-                if ( ServerPlayers[i]->connection == connection )
-                    return ServerPlayers[i];
-            }
-            return NULL;
-        }
-        ServerPlayer * FromPid(playerid pid)
-        {
-            unsigned i = 0;
-            for(; i < ServerPlayers.size(); ++i)
-            {
-                if ( ServerPlayers[i]->id == pid )
-                    return ServerPlayers[i];
+                if ( Slots[i]->connection == connection )
+                    return Slots[i];
             }
             return NULL;
         }

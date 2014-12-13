@@ -33,6 +33,8 @@ namespace Net
         int port;
         double hostname_lookup;
         
+        std::string as_string();
+        
         // ids of the last recieved packets from the other machine
         // out-of-order droppable packets are discarded
         // early undroppable packets are discarded

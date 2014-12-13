@@ -13,14 +13,12 @@ namespace Sys
         Player * player;
         playerid id;
     };
-    namespace ServerPlayers
+    namespace PlayerList
     {
-        extern std::vector<ServerPlayer*> ServerPlayers;
-        ServerPlayer * Add(Net::Connection * connection, Player * player);
-        ServerPlayer * AddFrom(Net::Connection * connection, Player * player, playerid id);
+        extern std::vector<ServerPlayer*> Slots;
+        unsigned AddPlayer(Net::Connection * connection, Player * player);
         void Remove(playerid);
         ServerPlayer * FromConnection(Net::Connection * connection);
-        ServerPlayer * FromPid(playerid pid);
     }
 }
 

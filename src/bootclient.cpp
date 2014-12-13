@@ -42,69 +42,95 @@ bool sys_init()
     return 1;
 }
 
-void process_message_playerinput(Net::Connection * connection, double buffer)
+void process_message_addplayer(Net::Connection * connection, double buffer)
 {
-    Sys::myself->input.setInputsAsBitfield ( read_ushort(buffer) ) ;
-    Sys::myself->input.aimDirection = read_ushort(buffer)*360.0/0x10000;
-    Sys::myself->input.aimDistance = read_ubyte(buffer)*2;
-}
-
-void process_message_spawnnewplayer(Net::Connection * connection, double buffer)
-{
-    auto id = read_ubyte(buffer);
     auto len = read_ubyte(buffer);
     auto name = read_string(buffer, len);
-    auto player = new Sys::Player(Ent::New(), name);
     std::cout << "spawning new player " << name << "\n";
+    auto player = new Sys::Player(Ent::New(), name);
     
     auto x = read_ushort(buffer);
     auto y = read_ushort(buffer);
-    auto am = read_ubyte(buffer);
     
     player->spawn(x, y);
-    std::cout << "isme: " << am << "\n";
-    if(am)
-    {
-        player->character->myself = true;
-        Sys::myself = player;
-    }
-    Sys::ServerPlayers::AddFrom(nullptr, player, id);
-    std::cout << "Spawned player, ptr " << Sys::myself << "\n";
+    
+    Sys::PlayerList::AddPlayer(nullptr, player);
+    std::cout << "done with " << name << "\n";
 }
 
 void process_message_playerpositions(Net::Connection * connection, double buffer)
 {
-    if(buffer_bytes_left(buffer) != 5)
-        puts("Bad length of playerpositions!");
-    for(auto i = 0; i < buffer_size(buffer)/5; i++) /*byte + short + short*/
+    auto numbytes = 12;
+    for(auto i = 0; i < buffer_size(buffer); i += numbytes)
     {
-        auto pid = read_ubyte(buffer);
-        auto serverplayer = Sys::ServerPlayers::FromPid(pid);
-        std::cout << "pid: " << pid << "\n";
+        auto pix = read_ubyte(buffer);
+        Sys::ServerPlayer * serverplayer = NULL;
+        if(pix < Sys::PlayerList::Slots.size())
+            serverplayer = Sys::PlayerList::Slots[pix];
+        std::cout << "p pix: " << pix << "\n";
         if(serverplayer)
         {
+            auto input = &serverplayer->player->input;
             auto character = serverplayer->player->character;
             if(character)
             {
                 character->position->x = read_ushort(buffer)/10;
                 character->position->y = read_ushort(buffer)/10;
+                character->hspeed = read_byte(buffer)/5;
+                character->vspeed = read_byte(buffer)/5;
+                input->setInputsAsBitfield( read_ushort(buffer) );
+                input->aimDirection = read_ushort(buffer)*360.0/0x10000;
+                input->aimDistance = read_ubyte(buffer)*2;
             }
+            else for (auto i = numbytes; i > 0; --i)
+                read_ubyte(buffer);
         }
+        // somehow we got more inputs than there are players, or have an invalid
+        // serverplayer, but whatever. avoid corrupting the rest of the stream.
+        else for (auto i = numbytes; i > 0; --i)
+            read_ubyte(buffer);
     }
 }
 
-void process_message_playerlist(Net::Connection * connection, double buffer)
+void process_message_playerinputs(Net::Connection * connection, double buffer)
 {
-    auto myid = read_ubyte(buffer);
+    auto numbytes = 6;
+    for(auto i = 0; i < buffer_size(buffer); i += numbytes)
+    {
+        auto pix = read_ubyte(buffer);
+        Sys::ServerPlayer * serverplayer = NULL;
+        if(pix < Sys::PlayerList::Slots.size())
+            serverplayer = Sys::PlayerList::Slots[pix];
+        std::cout << "i pix: " << pix << " out of " << Sys::PlayerList::Slots.size() << "\n";
+        if(serverplayer)
+        {
+            auto input = &serverplayer->player->input;
+            auto character = serverplayer->player->character;
+            if(character)
+            {
+                input->setInputsAsBitfield( read_ushort(buffer) );
+                input->aimDirection = read_ushort(buffer)*360.0/0x10000;
+                input->aimDistance = read_ubyte(buffer)*2;
+            }
+            else for (auto i = numbytes; i > 0; --i)
+                read_ubyte(buffer);
+        }
+        // somehow we got more inputs than there are players, or have an invalid
+        // serverplayer, but whatever. avoid corrupting the rest of the stream.
+        else for (auto i = numbytes; i > 0; --i)
+            read_ubyte(buffer);
+    }
+}
+
+void process_message_serveplayer(Net::Connection * connection, double buffer)
+{
+    std::cout << "getting a playerlist!\n";
     while(buffer_bytes_left(buffer))
     {
-        auto id = read_ubyte(buffer);
-        
         auto len = read_ubyte(buffer);
         auto name = read_string(buffer, len);
         auto player = new Sys::Player(Ent::New(), name);
-        std::cout << "in list, spawning new player " << name << "\n";
-        Sys::ServerPlayers::AddFrom(nullptr, player, id);
+        Sys::PlayerList::AddPlayer(nullptr, player);
         
         if(read_ubyte(buffer)) // has character
         {
@@ -113,12 +139,14 @@ void process_message_playerlist(Net::Connection * connection, double buffer)
             player->spawn(x, y);
         }
         
-        if(id == myid)
+        if(buffer_bytes_left(buffer) == 0)
         {
             Sys::myself = player;
-            player->character->myself = true;
+            if(player->character)
+                player->character->myself = true;
         }
     }
+    std::cout << "got a playerlist\n";
 }
 
 bool main_init()
@@ -152,10 +180,10 @@ bool main_init()
     Net::connections.push_back(Sys::server);
     Sys::server->send_or_resend_connection_request();
     
-    Net::assign ( 1, SERVERMESSAGE::PLAYERINPUT, &process_message_playerinput );
-    Net::assign ( 0, SERVERMESSAGE::SPAWNNEWPLAYER, &process_message_spawnnewplayer );
+    Net::assign ( 1, SERVERMESSAGE::PLAYERINPUTS, &process_message_playerinputs );
+    Net::assign ( 0, SERVERMESSAGE::ADDPLAYER, &process_message_addplayer );
     Net::assign ( 1, SERVERMESSAGE::PLAYERPOSITIONS, &process_message_playerpositions );
-    Net::assign ( 0, SERVERMESSAGE::PLAYERLIST, &process_message_playerlist );
+    Net::assign ( 0, SERVERMESSAGE::SERVEPLAYER, &process_message_serveplayer );
     
     Sys::tems.push_back(&sys_init);
     

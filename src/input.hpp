@@ -24,6 +24,10 @@ namespace Input
         double aimDirection;
         double aimDistance;
         
+        unsigned short netkeys;
+        unsigned short netaimdir;
+        unsigned char netaimdist;
+        
         unsigned short getInputsAsBitfield();
         void cycleInput();
         void setInputsAsBitfield(unsigned short invalue);

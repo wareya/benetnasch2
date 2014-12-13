@@ -31,33 +31,25 @@ bool sys_init()
 
 void process_message_input(Net::Connection * connection, double buffer)
 {
-    auto r = Sys::ServerPlayers::FromConnection(connection);
-    if(r != NULL)
+    auto serverplayer = Sys::PlayerList::FromConnection(connection);
+    if(serverplayer != NULL)
     {
-        auto player = r->player;
+        Input::PlayerInput & input = serverplayer->player->input;
         
-        auto netkeys = read_ushort(buffer);
-        auto netaimdir = read_ushort(buffer);
-        auto netaimdist = read_ubyte(buffer);
-        player->input.setInputsAsBitfield ( netkeys ) ;
-        player->input.aimDirection = netaimdir*360.0/0x10000;
-        player->input.aimDistance = netaimdist*2;
+        input.netkeys = read_ushort(buffer);
+        input.netaimdir = read_ushort(buffer);
+        input.netaimdist = read_ubyte(buffer);
         
-        auto response = buffer_create();
-        write_ushort(response, netkeys); // key
-        write_ushort(response, netaimdir); // angle
-        write_ubyte(response, netaimdist); // distance
-        Net::send(connection, 1, SERVERMESSAGE::PLAYERINPUT, response);
-        buffer_destroy(response);
+        input.setInputsAsBitfield ( input.netkeys ) ;
+        input.aimDirection = input.netaimdir*360.0/0x10000;
+        input.aimDistance = input.netaimdist*2;
     }
 }
 
-double build_message_playerlist(Sys::ServerPlayer * targetplayer, double buffer)
+double build_message_serveplayer(Sys::ServerPlayer * targetplayer, double buffer)
 {
-    write_ubyte(buffer, targetplayer->id);
-    for(auto serverplayer : Sys::ServerPlayers::ServerPlayers)
+    for(auto serverplayer : Sys::PlayerList::Slots)
     {
-        write_ubyte(buffer, serverplayer->id);
         write_ubyte(buffer, serverplayer->player->name.size());
         std::string asdf = serverplayer->player->name;
         asdf.resize(255, '\0');
@@ -76,35 +68,36 @@ double build_message_playerlist(Sys::ServerPlayer * targetplayer, double buffer)
 
 void process_message_playerrequest(Net::Connection * connection, double buffer)
 {
-    if(Sys::ServerPlayers::FromConnection(connection) == NULL)
+    if(Sys::PlayerList::FromConnection(connection) == NULL)
     {
         auto namelen = read_ubyte(buffer);
         auto name = read_string(buffer, namelen);
         auto player = new Sys::Player(Ent::New(), name);
-        auto serverplayer = Sys::ServerPlayers::Add(connection, player);
+        unsigned playerslot = Sys::PlayerList::AddPlayer(connection, player);
+        auto serverplayer = Sys::PlayerList::Slots[playerslot];
         
         player->spawn(Maps::width/2, Maps::height/2);
         
         auto response = buffer_create();
-        write_ubyte(response, serverplayer->id);
         write_ubyte(response, namelen);
         write_string(response, name);
         write_ushort(response, Maps::width/2);
         write_ushort(response, Maps::height/2);
-        write_ubyte(response, 0);
         
         // tell other players about the new player
-        for(auto remote : Sys::ServerPlayers::ServerPlayers)
+        for ( unsigned i = 0; i+1/*last slot is joining player*/ < Sys::PlayerList::Slots.size(); ++i )
         {
-            if(remote != serverplayer)
-                Net::send(serverplayer->connection, 0, SERVERMESSAGE::SPAWNNEWPLAYER, response);
+            auto current = Sys::PlayerList::Slots[i]->connection;
+            std::cout << "Sending player " << playerslot << " to " << i << " (" << current->as_string() << ")\n";
+            Net::send(current, 0, SERVERMESSAGE::ADDPLAYER, response);
         }
+        
         buffer_clear(response);
         
         // tell the new player about everyone, including theirself
-        build_message_playerlist(serverplayer, response);
-        Net::send(connection, 0, SERVERMESSAGE::PLAYERLIST, response);
-        buffer_clear(response);
+        build_message_serveplayer(serverplayer, response);
+        Net::send(connection, 0, SERVERMESSAGE::SERVEPLAYER, response);
+        buffer_destroy(response);
     }
 }
 
@@ -119,7 +112,7 @@ bool main_init()
     
     Net::init(4192);
     
-    Net::assign ( 0, CLIENTMESSAGE::INPUT, &process_message_input );
+    Net::assign ( 1, CLIENTMESSAGE::INPUT, &process_message_input );
     Net::assign ( 0, CLIENTMESSAGE::PLAYERREQUEST, &process_message_playerrequest );
     
     Sys::tems.push_back(&sys_init);

@@ -65,6 +65,10 @@ namespace Net
             connection_send_time = Time::get_us();
         }
     }
+    std::string Connection::as_string()
+    {
+        return hostname + ":" + std::to_string(port);
+    }
     
     // create local socket listening on given port
     bool init ( int port )
@@ -138,7 +142,6 @@ namespace Net
         // Read out received messages
         while(udp_receive(local_socket))
         {
-            std::cout << "rec " << read_hex(local_socket, socket_receivebuffer_size(local_socket)) << "\n";
             buffer_set_readpos(local_socket, 0);
             auto remote_ip = socket_remote_ip(local_socket);
             auto remote_port = socket_remote_port(local_socket);
@@ -352,12 +355,10 @@ namespace Net
         if(!droppable) // we want to store our send buffer (rather than the raw buffer, for simplicity's sake) for resending
         {
             connection->undroppable_send_queue.push_back(new Message ({connection->sent_undroppable_packet-1, droppable, message, temp, Time::get_us()}));
-            std::cout << "send " << read_hex(temp, buffer_size(temp)) << "\n";
             buffer_set_readpos(temp, 0);
         }
         else // think handles clean of undroppables, but we can trash the droppables here
         {
-            std::cout << "send " << read_hex(temp, buffer_size(temp)) << "\n";
             buffer_destroy(temp);
         }
     }

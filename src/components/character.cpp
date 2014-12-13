@@ -24,6 +24,8 @@ namespace Sys
         delete weaponsprite->position;
         weaponsprite->position = position;
         
+        puts("making a character");
+        
         Characters.add(this);
     }
     Character::~Character()
