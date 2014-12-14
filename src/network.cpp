@@ -6,6 +6,10 @@
 #include <iostream>
 #endif
 
+#ifdef B_NET_DEBUG_PRINTPACK
+#define B_NET_DEBUG_MISTAKES
+#endif
+
 void trash_buffer(double socket) // discard socket buffer by sending to port 9 TODO: VERIFY (duplicated TODO)
 {
     // own function for easy removal in the future
@@ -172,7 +176,7 @@ namespace Net
             // make a Connection for its remote manually, instead of from a response.
             if(remote == NULL and type != CONNECTION_REQUEST)
             {
-                #ifdef B_NET_DEBUG_PRINTPACK
+                #ifdef B_NET_DEBUG_MISTAKES
                     std::cout << "Throwing away packet from "
                               << remote_ip << ":" << remote_port
                               << " that would be of type "
@@ -202,7 +206,7 @@ namespace Net
                 }
                 else
                 {
-                    #if defined(B_NET_DEBUG_PRINTPACK) || defined(B_NET_DEBUG_CONNECTION)
+                    #if defined(B_NET_DEBUG_MISTAKES) || defined(B_NET_DEBUG_CONNECTION)
                         std::cout << "Ignoring reconnection from " << remote_ip << "\n";
                     #endif
                 }
@@ -245,8 +249,8 @@ namespace Net
                     }
                     else
                     {
-                        #ifdef B_NET_DEBUG_PRINTPACK
-                            puts("Ignoring message");
+                        #ifdef B_NET_DEBUG_MISTAKES
+                            std::cout << "Ignoring message " << id << " vs " << remote->last_undroppable_packet << "\n";
                         #endif
                         break; // duplicate or dependent on late/dropped message
                     }
@@ -255,9 +259,12 @@ namespace Net
                 if(type == MESSAGE_DROPPABLE)
                 {
                     if(id > remote->last_droppable_packet)
-                        remote->last_undroppable_packet = id;
+                        remote->last_droppable_packet = id;
                     else
                     {
+                        #ifdef B_NET_DEBUG_MISTAKES
+                            puts("Ignoring message (out-of-order)");
+                        #endif
                         break; // out of order (late)
                     }
                 }

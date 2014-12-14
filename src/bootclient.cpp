@@ -67,7 +67,9 @@ void process_message_playerpositions(Net::Connection * connection, double buffer
         Sys::ServerPlayer * serverplayer = NULL;
         if(pix < Sys::PlayerList::Slots.size())
             serverplayer = Sys::PlayerList::Slots[pix];
-        std::cout << "p pix: " << pix << "\n";
+        #ifdef B_NET_DEBUG_PRINTPACK
+            std::cout << "p pix: " << pix << " out of " << Sys::PlayerList::Slots.size() << "\n";
+        #endif
         if(serverplayer)
         {
             auto input = &serverplayer->player->input;
@@ -101,7 +103,9 @@ void process_message_playerinputs(Net::Connection * connection, double buffer)
         Sys::ServerPlayer * serverplayer = NULL;
         if(pix < Sys::PlayerList::Slots.size())
             serverplayer = Sys::PlayerList::Slots[pix];
-        std::cout << "i pix: " << pix << " out of " << Sys::PlayerList::Slots.size() << "\n";
+        #ifdef B_NET_DEBUG_PRINTPACK
+            std::cout << "i pix: " << pix << " out of " << Sys::PlayerList::Slots.size() << "\n";
+        #endif
         if(serverplayer)
         {
             auto input = &serverplayer->player->input;

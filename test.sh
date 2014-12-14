@@ -124,6 +124,8 @@ cmd="g++ $cflags"
 
 #options
 dflags='-O0 -g -ggdb -mconsole -D B_NET_DEBUG_CONNECTION'
+ddflags='-O0 -g -ggdb -mconsole -D B_NET_DEBUG_CONNECTION -D B_NET_DEBUG_MISTAKES'
+dddflags='-O0 -g -ggdb -mconsole -D B_NET_DEBUG_CONNECTION -D B_NET_DEBUG_PRINTPACK'
 
 fflags='-O3'
 mflags='-O3 -msse -msse2' # modern x86 optimizations
@@ -136,6 +138,10 @@ zflags='-O3 -D B_FRAMELIMIT_DISABLE -D B_DEBUG_NORENDER '
 
 if [ "$1" == "-d" ]; then
     cmd="$cmd $dflags"
+elif [ "$1" == "-dd" ]; then
+    cmd="$cmd $ddflags"
+elif [ "$1" == "-ddd" ]; then
+    cmd="$cmd $dddflags"
 elif [ "$1" == "-f" ]; then
     cmd="$cmd $fflags"
 elif [ "$1" == "-m" ]; then
