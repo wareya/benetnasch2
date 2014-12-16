@@ -110,7 +110,7 @@ bool main_init()
     if(faucnet_init() < 0)
         return 0;
     
-    Net::init(4192);
+    Net::init(9180);
     
     Net::assign ( 1, CLIENTMESSAGE::INPUT, &process_message_input );
     Net::assign ( 0, CLIENTMESSAGE::PLAYERREQUEST, &process_message_playerrequest );

@@ -12,8 +12,8 @@ namespace Sys
         
         position = new Position(myEntity, argx, argy);
         
-        sprite = new TexturedDrawable(myEntity, argx, argy, 0, 0);
-        weaponsprite = new RotatingTexturedDrawable(myEntity, argx, argy, -8, 8, 0, 20, 16);
+        sprite = new TexturedDrawable(Ent::New(), argx, argy, 0, 0);
+        weaponsprite = new RotatingTexturedDrawable(sprite->entityID, argx, argy, -8, 8, 0, 20, 16);
         
         sprite->set_sprite(image_stand);
         weaponsprite->set_sprite(image_weapon);
@@ -35,6 +35,7 @@ namespace Sys
         delete body;
         delete position;
         delete sprite;
+        delete weaponsprite;
         Characters.remove(this);
     }
     void Character::center_on(float x, float y)

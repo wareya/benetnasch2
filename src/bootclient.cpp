@@ -180,7 +180,7 @@ bool main_init()
     
     Net::init(0);
     
-    Sys::server = new Net::Connection( "127.0.0.1", 4192 );
+    Sys::server = new Net::Connection( "127.0.0.1", 9180 );
     Net::connections.push_back(Sys::server);
     Sys::server->send_or_resend_connection_request();
     
