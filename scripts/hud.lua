@@ -1,0 +1,2 @@
+bhud.print("test");
+

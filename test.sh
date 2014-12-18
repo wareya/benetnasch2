@@ -119,6 +119,10 @@ else
 fi
 
 
+#TODO: DETECT
+linker+=' -llua'
+
+
 cmd="g++ $cflags"
 
 

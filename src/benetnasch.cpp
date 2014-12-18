@@ -33,9 +33,12 @@ int main(int argc, char *argv[])
             unsigned i;
             for (i = 0; Sys::tems[i] != function and i < Sys::tems.size(); ++i) ;
             if(i == Sys::tems.size())
-                std::cout << "Bad system removal in mainloop!";
+                std::cout << "Bad system removal in mainloop!\n";
             else
+            {
+                std::cout << "Removed a system from mainloops.\n";
                 Sys::tems.erase(Sys::tems.begin()+i);
+            }
         }
     }
     return 0;
