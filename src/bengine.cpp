@@ -5,13 +5,20 @@
 
 namespace Sys
 {
+    // self-explanatory
     SDL_Window * MainWindow;
+    // read the SDL documentation
     SDL_Renderer * Renderer;
+    // do it
     const SDL_Rect shape = {0, 0, 800, 600};
+    // whether we want to quit out of the engine
     bool quit = false;
     
+    // list of Sys::tems -- basically just parts of the mainloop
     std::vector<bool(*)()> tems;
     
+    // Texture storage map. Nice and simple, right?
+    // Sorry for using an obscure library.
     nall::map<std::string, SDL_Texture *> TexturePile;
     
     

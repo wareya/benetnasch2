@@ -2,6 +2,7 @@
 #include "genericallocator.hpp"
 #include <vector>
 
+// read serverplayer.hpp
 namespace Sys
 {
     namespace PlayerList

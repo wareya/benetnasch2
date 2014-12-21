@@ -11,20 +11,20 @@ namespace Input
 {
     PlayerInput::PlayerInput()
     {
-        // Yes, this is a constructor.
-        for (int i = 0; i < NUMBER_INPUTS; i++)
+        // this is a constructor
+        for (int i = 0; i < NUMBER_INPUTS; i++) // this is a for loop
         {
-            inputs[i] = 0;
+            inputs[i] = 0; // this is an initialization
             last_inputs[i] = 0;
         }
         aimDirection = 0;
         aimDistance = 0;
     }
-    void PlayerInput::cycleInput()
+    void PlayerInput::cycleInput() // this is a stateful method
     {
         for (short i = 0; i < NUMBER_INPUTS; i++)
         {
-            last_inputs[i] = inputs[i];
+            last_inputs[i] = inputs[i]; // this is a state update
         }
     }
     unsigned short PlayerInput::getInputsAsBitfield()
@@ -38,6 +38,7 @@ namespace Input
         }
         return retvalue;
     }
+    // used in networking code
     void PlayerInput::setInputsAsBitfield(unsigned short invalue)
     {
         unsigned short mask;
@@ -48,7 +49,7 @@ namespace Input
         }
     }
         
-    void ClientInput::Init()
+    void ClientInput::Init() // set up default key binds
     {
         corestate = SDL_GetKeyboardState(NULL);
         keybindings.push_back({SDL_SCANCODE_E, JUMP});

@@ -3,8 +3,13 @@
 #include "genericallocator.hpp"
 #include <iostream> // debugging
 
+// Entities aren't reaallly a thing. Their primary use is to distinguish
+// when complex component structures share components. Check out character.cpp
+// for an example, with it overriding the "position" of its drawables.
+// Read textureddrawable's destructor for where entityid is actually used.
 namespace Ent
 {
+    // Read entity.hpp
     GenericAllocator<entityid_t> allocator;
     
     entityid_t New()

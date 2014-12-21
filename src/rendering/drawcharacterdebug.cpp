@@ -7,6 +7,7 @@ namespace Sys
     {
         bool DrawCharacterDebug(float x, float y)
         {
+            // render each character's hulls
             for(auto c : Sys::Characters)
             {
                 SDL_Rect shape;

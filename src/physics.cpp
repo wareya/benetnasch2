@@ -5,7 +5,9 @@ namespace Sys
 {
     namespace Physicsers
     {
+        // Time which the PREVIOUS frame took, from framelimiter call to framelimiter call.
         double delta = 1/Time::Framerate;
+        // read UpdateDelta
         bool delta_is_too_damn_low = false;
     }
     bool UpdateDelta()
