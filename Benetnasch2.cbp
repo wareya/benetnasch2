@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="Benetnasch2" />
+		<Option pch_mode="2" />
+		<Option compiler="null" />
+		<Build>
+			<Target title="Release">
+				<Option output="bin/Release/Benetnasch2" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="null" />
+			</Target>
+		</Build>
+		<Unit filename="src/benetnasch.cpp" />
+		<Unit filename="src/bengine.cpp" />
+		<Unit filename="src/bengine.hpp" />
+		<Unit filename="src/blib.cpp" />
+		<Unit filename="src/blib.hpp" />
+		<Unit filename="src/blib/bmath.cpp" />
+		<Unit filename="src/blib/bmath.hpp" />
+		<Unit filename="src/blib/btime.cpp" />
+		<Unit filename="src/blib/btime.hpp" />
+		<Unit filename="src/blib/faucnet.cpp" />
+		<Unit filename="src/blib/faucnet.hpp" />
+		<Unit filename="src/blib/sdlhelpers.cpp" />
+		<Unit filename="src/blib/sdlhelpers.hpp" />
+		<Unit filename="src/boot.hpp" />
+		<Unit filename="src/bootclient.cpp" />
+		<Unit filename="src/bootserver.cpp" />
+		<Unit filename="src/client/clientdata.cpp" />
+		<Unit filename="src/client/clientdata.hpp" />
+		<Unit filename="src/client/nethandlers.cpp" />
+		<Unit filename="src/client/nethandlers.hpp" />
+		<Unit filename="src/client/think.cpp" />
+		<Unit filename="src/client/think.hpp" />
+		<Unit filename="src/components.cpp" />
+		<Unit filename="src/components.hpp" />
+		<Unit filename="src/components/allcomponents.hpp" />
+		<Unit filename="src/components/backgrounddrawable.cpp" />
+		<Unit filename="src/components/boxdrawable.cpp" />
+		<Unit filename="src/components/bullet.cpp" />
+		<Unit filename="src/components/character.cpp" />
+		<Unit filename="src/components/componentlists.cpp" />
+		<Unit filename="src/components/drawingcomponents.hpp" />
+		<Unit filename="src/components/gamecomponents.hpp" />
+		<Unit filename="src/components/gameconnection.cpp" />
+		<Unit filename="src/components/gameconnection.hpp" />
+		<Unit filename="src/components/player.cpp" />
+		<Unit filename="src/components/player.hpp" />
+		<Unit filename="src/components/primitives.cpp" />
+		<Unit filename="src/components/primitives.hpp" />
+		<Unit filename="src/components/rotatingtextureddrawable.cpp" />
+		<Unit filename="src/components/textureddrawable.cpp" />
+		<Unit filename="src/entity.cpp" />
+		<Unit filename="src/entity.hpp" />
+		<Unit filename="src/genericallocator.hpp" />
+		<Unit filename="src/input.cpp" />
+		<Unit filename="src/input.hpp" />
+		<Unit filename="src/maps.cpp" />
+		<Unit filename="src/maps.hpp" />
+		<Unit filename="src/netconst.hpp" />
+		<Unit filename="src/network.cpp" />
+		<Unit filename="src/network.hpp" />
+		<Unit filename="src/physics.cpp" />
+		<Unit filename="src/physics.hpp" />
+		<Unit filename="src/physics/bullets.cpp" />
+		<Unit filename="src/physics/characters.cpp" />
+		<Unit filename="src/physics/subroutines.cpp" />
+		<Unit filename="src/physics/subroutines.hpp" />
+		<Unit filename="src/rendering.cpp" />
+		<Unit filename="src/rendering.hpp" />
+		<Unit filename="src/rendering/commonrenderdep.hpp" />
+		<Unit filename="src/rendering/drawbackground.cpp" />
+		<Unit filename="src/rendering/drawboxes.cpp" />
+		<Unit filename="src/rendering/drawbullets.cpp" />
+		<Unit filename="src/rendering/drawcharacterdebug.cpp" />
+		<Unit filename="src/rendering/drawrotatetextured.cpp" />
+		<Unit filename="src/rendering/drawscreentext.cpp" />
+		<Unit filename="src/rendering/drawspeedometer.cpp" />
+		<Unit filename="src/rendering/drawtextured.cpp" />
+		<Unit filename="src/rendering/renderers.hpp" />
+		<Unit filename="src/server/think.cpp" />
+		<Unit filename="src/server/think.hpp" />
+		<Unit filename="src/serverplayer.cpp" />
+		<Unit filename="src/serverplayer.hpp" />
+		<Extensions>
+			<code_completion />
+			<envvars />
+			<debugger />
+			<lib_finder disable_auto="1" />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
