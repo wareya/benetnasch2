@@ -2,6 +2,7 @@
 #define INCLUDE_CLIENTNET
 
 #include "../network.hpp"
+
 namespace Sys
 {
     void process_message_addplayer(Net::Connection * connection, double buffer);

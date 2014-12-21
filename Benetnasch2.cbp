@@ -33,6 +33,8 @@
 		<Unit filename="src/client/clientdata.hpp" />
 		<Unit filename="src/client/nethandlers.cpp" />
 		<Unit filename="src/client/nethandlers.hpp" />
+		<Unit filename="src/client/scripting.cpp" />
+		<Unit filename="src/client/scripting.hpp" />
 		<Unit filename="src/client/think.cpp" />
 		<Unit filename="src/client/think.hpp" />
 		<Unit filename="src/components.cpp" />
@@ -81,10 +83,13 @@
 		<Unit filename="src/rendering/drawspeedometer.cpp" />
 		<Unit filename="src/rendering/drawtextured.cpp" />
 		<Unit filename="src/rendering/renderers.hpp" />
+		<Unit filename="src/server/nethandlers.cpp" />
+		<Unit filename="src/server/nethandlers.hpp" />
 		<Unit filename="src/server/think.cpp" />
 		<Unit filename="src/server/think.hpp" />
 		<Unit filename="src/serverplayer.cpp" />
 		<Unit filename="src/serverplayer.hpp" />
+		<Unit filename="test.sh" />
 		<Extensions>
 			<code_completion />
 			<envvars />

@@ -11,25 +11,12 @@
 #include "client/clientdata.hpp"
 #include "client/think.hpp"
 #include "client/nethandlers.hpp"
+#include "client/scripting.hpp"
 #include "physics.hpp"
 #include "serverplayer.hpp"
 
-#include <lua/lua.hpp>
 
-lua_State * LuaHUD;
-bool do_hud()
-{
-    lua_pushvalue(LuaHUD, -1);
-    lua_pcall(LuaHUD, 0, 0, 0);
-    return 0;
-}
-
-int tolua_print (lua_State * L)
-{
-    std::cout << lua_tostring(L, 1) << "\n";
-    return 0;
-}
-
+// push systems into the mainloop
 bool sys_init()
 {
     Sys::afont = new bfont(Sys::Renderer, std::string("The Strider.bmp"));
@@ -54,16 +41,18 @@ bool sys_init()
         Sys::tems.push_back(&Sys::Physics); // physics
     #endif
     Sys::tems.push_back(&Sys::RenderThings); // rendering
-    Sys::tems.push_back(&do_hud); // rendering
+    Sys::tems.push_back(&Lua::do_hud); // rendering
     Sys::tems.push_back(&Sys::PresentScreen); // rendering
     
-    return 1;
+    return 1; // remove sys_init from mainloop
 }
 
 bool main_init()
 {
+    // random display thing that should be moved elsewhere
 	Sys::speeds.push_back(0);
 	
+	// initialize SDL
     if (SDL_Init(SDL_INIT_EVERYTHING) != 0)
         std::cout << "Could not initialize SDL: " << SDL_GetError() << std::endl;
     
@@ -74,43 +63,37 @@ bool main_init()
     if (Sys::Renderer == nullptr)
         std::cout << "Could not create an SDL renderer: " << SDL_GetError() << std::endl;
     
-    LuaHUD = luaL_newstate();
-    if (LuaHUD == nullptr)
-        std::cout << "Could not load LUA. Sorry.\n";
-    
-    luaL_Reg funcs[] = 
-    {
-        {"print", &tolua_print},
-        {NULL,NULL}
-    };
-    
-    luaL_newlib(LuaHUD, funcs);
-    lua_setglobal(LuaHUD, "bhud");
-    
-    int afwe = luaL_loadfile(LuaHUD, "scripts/hud.lua");
-    if (afwe != 0)
-        std::cout << "Could not load HUD script: " << afwe << std::endl;
-    
-    
+    // don't know if I actually use randomness anywhere
     srand(time(NULL));
-    
     SDL_PumpEvents();
+    
+    
+    // sets up hud and such
+    Lua::scripting_init();
+    
+    // input reading structure
     Sys::myinput.Init();
     
+    // load faucnet dll and assign function pointers
     if(faucnet_init() < 0)
         return 0;
     
+    // something for the renderers! yeah!
     Sys::view_x = 0;
     Sys::view_y = 0;
     
+    // nethandlers.cpp
+    Sys::add_processors();
+    
+    // grab a port for responses from the server
     Net::init(0);
     
+    // connect to localhost server
     Sys::server = new Net::Connection( "127.0.0.1", 9180 );
     Net::connections.push_back(Sys::server);
     Sys::server->send_or_resend_connection_request();
     
-    Sys::add_processors();
-    
+    // get mainloop ready
     Sys::tems.push_back(&sys_init);
     
     return 0;

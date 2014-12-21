@@ -39,6 +39,7 @@ if [ "$1" == "server" ] || [ "$1" == "-s" ] || [ "$2" == "server" ]; then
     fi
     source+=('src/bootserver.cpp')
     source+=('src/server/think.cpp')
+    source+=('src/server/nethandlers.cpp')
 else
     if [ "$OSTYPE" == "msys" ]; then
         executable="benetnasch.exe"
@@ -49,6 +50,7 @@ else
     source+=('src/client/clientdata.cpp')
     source+=('src/client/think.cpp')
     source+=('src/client/nethandlers.cpp')
+    source+=('src/client/scripting.cpp')
     source+=('src/rendering/drawbackground.cpp')
     source+=('src/rendering/drawboxes.cpp')
     source+=('src/rendering/drawbullets.cpp')
