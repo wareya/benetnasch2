@@ -11,7 +11,7 @@ int faucnet_init()
     auto obj = SDL_LoadObject("Faucet Networking.dll");
     if(obj == NULL)
     {
-        std::cout << SDL_GetError();
+        std::cout << SDL_GetError() << "\n";
         return -1;
     }
     // init
