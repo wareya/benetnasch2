@@ -1,5 +1,7 @@
 *.exe
 *.out
 *.o
+*.so
+*.dll
 junk
 *.zip

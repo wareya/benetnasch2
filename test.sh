@@ -126,13 +126,16 @@ fi
 linker+=' -llua'
 
 
-cmd="g++ $cflags"
+cmd="g++ -m32 -march=i686 $cflags"
 
+if [ $OSTYPE == "msys" ]; then
+    console="-mconsole"
+fi
 
 #options
-dflags='-O0 -g -ggdb -mconsole -D B_NET_DEBUG_CONNECTION'
-ddflags='-O0 -g -ggdb -mconsole -D B_NET_DEBUG_CONNECTION -D B_NET_DEBUG_MISTAKES'
-dddflags='-O0 -g -ggdb -mconsole -D B_NET_DEBUG_CONNECTION -D B_NET_DEBUG_PRINTPACK'
+dflags="-O0 -g -ggdb $console -D B_NET_DEBUG_CONNECTION"
+ddflags="-O0 -g -ggdb $console -D B_NET_DEBUG_CONNECTION -D B_NET_DEBUG_MISTAKES"
+dddflags="-O0 -g -ggdb $console -D B_NET_DEBUG_CONNECTION -D B_NET_DEBUG_PRINTPACK"
 
 fflags='-O3'
 mflags='-O3 -msse -msse2' # modern x86 optimizations
@@ -186,6 +189,6 @@ do
     objects="$objects $obj"
 done
 echo "g++ -o $executable $objects $linker"
-g++ -o $executable $objects $linker
+g++ -m32 -o $executable $objects $linker
 
 echo "done"

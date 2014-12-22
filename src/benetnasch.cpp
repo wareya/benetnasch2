@@ -40,7 +40,7 @@ int main(int argc, char *argv[])
                 std::cout << "Bad system removal in mainloop!\n";
             else
             {
-                std::cout << "Removed a system from mainloops.\n";
+                std::cout << "Removed a system from mainloop.\n";
                 Sys::tems.erase(Sys::tems.begin()+i);
             }
         }

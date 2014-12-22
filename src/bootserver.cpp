@@ -24,9 +24,14 @@ bool sys_init()
     #ifndef B_DEBUG_COREFRAMES
         Sys::tems.push_back(&Sys::UpdateDelta); // physics
         Sys::tems.push_back(&Net::think);
+    #endif
+    Sys::tems.push_back(&Sys::SDLEvents);   
+    #ifndef B_DEBUG_COREFRAMES
         Sys::tems.push_back(&Sys::Physics); // physics
         Sys::tems.push_back(&Sys::ServerThink);
     #endif
+    
+    puts("Added various functions to mainloop.");
     
     return 1; // remove sys_init from mainloop
 }

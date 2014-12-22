@@ -5,10 +5,18 @@
 #undef main
 
 #include <iostream>
+#include <string>
 
 int faucnet_init()
 {
-    auto obj = SDL_LoadObject("Faucet Networking.dll");
+    std::string path("");
+    path += SDL_GetBasePath();
+    #ifdef __MINGW32__
+    path += "Faucet Networking.dll";
+    #else
+    path += "Faucet Networking.so";
+    #endif
+    auto obj = SDL_LoadObject(path.data());
     if(obj == NULL)
     {
         std::cout << SDL_GetError() << "\n";
