@@ -34,6 +34,7 @@ namespace Sys
         Renderers::DrawCharacterDebug(view_x, view_y);
         Renderers::DrawBullets(view_x, view_y);
         Renderers::DrawSpeedometer(view_x, view_y);
+        Renderers::DrawTextWindows(view_x, view_y);
         #endif
         #endif
         Renderers::DrawScreenText(view_x, view_y);

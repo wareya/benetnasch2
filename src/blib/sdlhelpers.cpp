@@ -66,7 +66,10 @@ SDL_Texture *loadTexture( const std::string &file, SDL_Renderer *renderer )
 
 bfont::bfont(SDL_Renderer *renderer, const std::string &file) : renderer(renderer)
 {
-	spritesheet = loadTexture(file, renderer);
+    SDL_Surface * surface = IMG_Load(file.c_str());
+    SDL_SetColorKey(surface, SDL_TRUE, 000);
+	spritesheet = SDL_CreateTextureFromSurface(renderer, surface);
+	SDL_FreeSurface(surface);
 }
 
 int colorLetter(bfont * muhfont, unsigned char r, unsigned char g, unsigned char b)
@@ -76,7 +79,7 @@ int colorLetter(bfont * muhfont, unsigned char r, unsigned char g, unsigned char
 
 int uncolorLetter(bfont * muhfont)
 {
-	return SDL_SetTextureColorMod(muhfont->spritesheet, 255, 25, 25);
+	return SDL_SetTextureColorMod(muhfont->spritesheet, 255, 255, 255);
 }
 
 int renderLetter(int x, int y, unsigned char letter, bfont * muhfont)

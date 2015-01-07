@@ -14,13 +14,12 @@
 #include "client/scripting.hpp"
 #include "physics.hpp"
 #include "serverplayer.hpp"
+#include "components/textwindow.hpp"
 
 
 // push systems into the mainloop
 bool sys_init()
 {
-    Sys::afont = new bfont(Sys::Renderer, std::string("The Strider.bmp"));
-    
     #ifndef B_DEBUG_COREFRAMES
         Maps::load_wallmask("wallmask.png");
         Maps::load_background("background.png");
@@ -28,6 +27,16 @@ bool sys_init()
         Sys::myinput.Init();
         Sys::myself = nullptr;
         Sys::did_send_playerrequest = false;
+        
+        Sys::afont = new bfont(Sys::Renderer, std::string("The Strider.bmp"));
+        auto t = new Sys::TextWindow(Ent::New());
+        t->append_line("Test t");
+        t->append_line("Test j");
+        t->append_line("Test 1");
+        t->append_line("Test 2");
+        t->append_line("Test 3");
+        t->append_line("Test 4");
+        t->append_line("Test 5");
     #endif
     
     Sys::tems.push_back(&Sys::FrameLimit); // bengine

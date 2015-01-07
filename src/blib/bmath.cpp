@@ -59,7 +59,7 @@ bool line_aabb_overlap (float x1, float y1, float x2, float y2,// coordinate pai
 		return false;
 	// else
 	return (line_aabb_overlap((x1+x2)/2, (y1+y2)/2, x2, y2, x3, y3, x4, y4) or
-			line_aabb_overlap(x1, y1, (x1+x2)/2, (y1+y2)/2, x3, y3, x4, y4));
+			line_aabb_overlap(x1, y1, (x1+x2)/2, (y1+y2)/2, x3, y3, x4, y4)); // will not infinitely recurse
 	
 }
 

@@ -6,7 +6,7 @@ namespace Sys
     Player::Player(entityid_t myEntity, const char * name) : Component(myEntity), name(name)
     {
         character = nullptr;
-        pid = 0; // TODO: FIX IMMEDIATELY
+        pid = 0;
         pteam = 0; // TODO: enum
         pclass = 0; // TODO: enum
         spawntimer = -1;

@@ -13,6 +13,7 @@ namespace Sys
         bool DrawBoxes(float x, float y);
         bool DrawSpeedometer(float x, float y);
         bool DrawScreenText(float x, float y);
+        bool DrawTextWindows(float x, float y);
     }   
 }
 

@@ -17,6 +17,8 @@ namespace Sys
     
     extern nall::map<std::string, SDL_Texture *> TexturePile;
     
+    SDL_Texture * check_texture_pile(std::string);
+    
     bool FrameLimit();
     bool SDLEvents();
 }

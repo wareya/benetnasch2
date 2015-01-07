@@ -24,20 +24,7 @@ namespace Sys
     }
     bool TexturedDrawable::set_sprite(const char * sarg)
     {
-        auto t = TexturePile.find( std::string(sarg) );
-        if(!t.valid) // null/not found
-        {
-            puts("Nonfound texture, loading");
-            sprite = loadTexture( sarg, Sys::Renderer );
-            if (sprite)
-                TexturePile.insert(std::string(sarg), sprite);
-        }
-        else // already loaded
-        {
-            puts("Attempting to assign texture");
-            sprite = *t.value;
-        }
-        std::cout << sprite << "\n";
+        sprite = check_texture_pile(sarg);
         return sprite != nullptr;
     }
 }

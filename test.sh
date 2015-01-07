@@ -59,7 +59,9 @@ else
     source+=('src/rendering/drawscreentext.cpp')
     source+=('src/rendering/drawtextured.cpp')
     source+=('src/rendering/drawspeedometer.cpp')
+    source+=('src/rendering/drawtextwindows.cpp')
     source+=('src/rendering.cpp')
+    source+=('src/components/textwindow.cpp')
 fi
 
 if [ "$OSTYPE" == "msys" ]; then

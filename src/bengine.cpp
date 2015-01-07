@@ -21,6 +21,24 @@ namespace Sys
     // Sorry for using an obscure library.
     nall::map<std::string, SDL_Texture *> TexturePile;
     
+    SDL_Texture * check_texture_pile(std::string sarg)
+    {
+        auto t = TexturePile.find( std::string(sarg) );
+        std::cout << "Looking for texture " << sarg;
+        if(!t.valid) // null/not found
+        {
+            puts("Nonfound texture, loading");
+            auto sprite = loadTexture( sarg, Sys::Renderer );
+            if (sprite)
+                TexturePile.insert(std::string(sarg), sprite);
+            return sprite;
+        }
+        else // already loaded
+        {
+            puts("Found texture");
+            return *t.value;
+        }
+    }
     
     bool FrameLimit()
     {
