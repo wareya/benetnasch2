@@ -71,6 +71,13 @@ bfont::bfont(SDL_Renderer *renderer, const std::string &file) : renderer(rendere
 	spritesheet = SDL_CreateTextureFromSurface(renderer, surface);
 	SDL_FreeSurface(surface);
 }
+bfont::~bfont()
+{
+    if(warnifalivewhenkilled.size() > 0)
+    {
+        puts("Deleting a font that has external state objects still alive! Something very bad is probably going to happen! FIX THIS");
+    }
+}
 
 int colorLetter(bfont * muhfont, unsigned char r, unsigned char g, unsigned char b)
 {

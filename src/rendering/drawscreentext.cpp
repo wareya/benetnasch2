@@ -1,5 +1,6 @@
 #include "renderers.hpp"
 #include "commonrenderdep.hpp"
+#include "renderstack.hpp"
 #include "../input.hpp"
 #include "../physics.hpp"
 #include "../client/clientdata.hpp"
@@ -10,11 +11,12 @@ namespace Sys
     {
         bool DrawScreenText(float x, float y)
         {
-            //sprintf("%d", );
+            TemporaryOffscreenRenderMode Gimme(Sys::Renderer);
+            
             renderText(0, 0,
                        (std::string("FPS:  ")+std::to_string(Time::scale / ((Time::frames.back() - Time::frames.front())/(Time::frames.size()-1)))).data(),
                        Sys::afont);
-        	#ifndef B_DEBUG_FRAMESONLY
+            #ifndef B_DEBUG_FRAMESONLY
             renderText(0, 13*1,
                        (std::string("Sim:  ")+std::to_string(Time::sim / 1000)).data(),
                        Sys::afont);
@@ -32,10 +34,13 @@ namespace Sys
                        Sys::afont);
             for(auto c : Sys::Characters)
             {
-                if (c->myself) renderText(0, 13*6,
-		                   (std::string("x, y:   ")+std::to_string(c->position->x)+std::string(" ")+std::to_string(c->position->y)).data(),
-		                   Sys::afont);
-		        break;
+                if (c->myself)
+                {
+                    renderText(0, 13*6,
+                               (std::string("x, y:   ")+std::to_string(c->position->x)+std::string(" ")+std::to_string(c->position->y)).data(),
+                               Sys::afont);
+                    break;
+                }
             }
             renderText(0, 13*7,
                        (std::string("Delta:  ")+std::to_string(Physicsers::delta)).data(),
@@ -45,11 +50,23 @@ namespace Sys
             {
                 for(short i = 0; i < Input::NUMBER_INPUTS; i++)
                     inputstr += std::to_string(myself->input.inputs[i]);
-                renderText(0, 13*7,
+                renderText(0, 13*8,
                            (std::string("Inputs: ")+inputstr).data(),
                            Sys::afont);
             }
-        	#endif
+            #endif
+            
+            Gimme.release();
+            
+            #ifndef B_DEBUG_FRAMESONLY
+            TemporaryTextureColor DropshadowBottom(Gimme.texture, 0,0,0);
+            renderTexture(Gimme.texture, Sys::Renderer, 0, 1);
+            renderTexture(Gimme.texture, Sys::Renderer, 1, 0);
+            #endif
+            
+            TemporaryTextureColor Body(Gimme.texture, 255,255,255);
+            renderTexture(Gimme.texture, Sys::Renderer, 0, 0);
+        	
             return false;
         }
     }

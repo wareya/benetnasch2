@@ -5,6 +5,7 @@
 #undef main
 #include <SDL2/SDL_image.h>
 #include <string>
+#include <list>
 
 void renderTextureInternal( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, int w, int h, bool flipx );
 
@@ -30,6 +31,8 @@ struct bfont // struct containing data for a fixed width font
 	char defaultchar = ' '; // default character when outside of valid range
 	SDL_Renderer * renderer;
 	bfont(SDL_Renderer *renderer, const std::string &file);
+	std::list<void*> warnifalivewhenkilled;
+	~bfont();
 	SDL_Rect src;
 	SDL_Rect dest;
 };

@@ -14,7 +14,7 @@ namespace Sys
         #ifndef B_DEBUG_NORENDER
         // Clear screen
         // Cheap clear; use SDL_RenderClear() instead of SDL_RenderFillRect() if there are problems
-        SDL_SetRenderDrawColor( Renderer, 0, 0, 0, 255);
+        SDL_SetRenderDrawColor( Renderer, 0, 0, 0, 255 );
         SDL_RenderFillRect( Renderer, &shape );
         
         // Come up with center TODO: Do this elsewhere to remove file's unreasonable Character dependency
