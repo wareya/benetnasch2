@@ -12,6 +12,7 @@
 #include "client/think.hpp"
 #include "client/nethandlers.hpp"
 #include "client/scripting.hpp"
+#include "client/textinput.hpp"
 #include "physics.hpp"
 #include "serverplayer.hpp"
 #include "components/textwindow.hpp"
@@ -29,7 +30,8 @@ bool sys_init()
         Sys::did_send_playerrequest = false;
         
         Sys::afont = new bfont(Sys::Renderer, std::string("The Strider.bmp"));
-        auto t = new Sys::TextWindow(Ent::New());
+        ClientEngine::console.display = new Sys::TextWindow(Ent::New());
+        auto t = ClientEngine::console.display;
         t->append_line("Test t");
         t->append_line("Test j");
         t->append_line("Test 1");
@@ -37,6 +39,9 @@ bool sys_init()
         t->append_line("Test 3");
         t->append_line("Test 4");
         t->append_line("Test 5");
+        ClientEngine::console.input = new Sys::TextBox(Ent::New());
+        
+        Sys::event_chain.push_back(&ClientEngine::Hotkeys); // client/textinput
     #endif
     
     Sys::tems.push_back(&Sys::FrameLimit); // bengine

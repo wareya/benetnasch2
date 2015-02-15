@@ -7,6 +7,23 @@
 
 namespace Sys
 {
+    struct TextBox : public Component
+    {
+        TextBox(entityid_t myEntity);
+        ~TextBox();
+        
+        unsigned width_pixels;
+        unsigned height_pixels;
+        unsigned x_onscreen;
+        unsigned y_onscreen;
+        bool visible;
+        
+        SDL_Texture * background;
+        
+        std::string line;
+    };
+    extern Collection<TextBox> TextBoxes;
+    
     struct TextWindow : public Component
     {
         TextWindow(entityid_t myEntity);
@@ -17,6 +34,7 @@ namespace Sys
         unsigned height_pixels;
         unsigned x_onscreen;
         unsigned y_onscreen;
+        bool visible;
         
         SDL_Texture * background;
         

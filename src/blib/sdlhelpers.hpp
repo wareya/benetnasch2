@@ -9,11 +9,15 @@
 
 void renderTextureInternal( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, int w, int h, bool flipx );
 
+void renderTextureInternalEX( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, int w, int h, int sx, int sy, int sw, int sh );
+
 void renderTextureAngledInternal( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, int w, int h, double angle, double xorigin, double yorigin, bool flipx );
 // scaled and flippable
 void renderTexture( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, double scale, bool flipx );
 // simple
 void renderTexture( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y );
+// stretched
+void renderTexture( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, int width, int height, bool _unused );
 // rotated
 void renderTexture( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, double scale, double angle, double xorigin, double yorigin, bool flip );
 

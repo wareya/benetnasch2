@@ -35,6 +35,8 @@
 		<Unit filename="src/client/nethandlers.hpp" />
 		<Unit filename="src/client/scripting.cpp" />
 		<Unit filename="src/client/scripting.hpp" />
+		<Unit filename="src/client/textinput.cpp" />
+		<Unit filename="src/client/textinput.hpp" />
 		<Unit filename="src/client/think.cpp" />
 		<Unit filename="src/client/think.hpp" />
 		<Unit filename="src/components.cpp" />
@@ -55,6 +57,8 @@
 		<Unit filename="src/components/primitives.hpp" />
 		<Unit filename="src/components/rotatingtextureddrawable.cpp" />
 		<Unit filename="src/components/textureddrawable.cpp" />
+		<Unit filename="src/components/textwindow.cpp" />
+		<Unit filename="src/components/textwindow.hpp" />
 		<Unit filename="src/entity.cpp" />
 		<Unit filename="src/entity.hpp" />
 		<Unit filename="src/genericallocator.hpp" />
@@ -82,7 +86,9 @@
 		<Unit filename="src/rendering/drawscreentext.cpp" />
 		<Unit filename="src/rendering/drawspeedometer.cpp" />
 		<Unit filename="src/rendering/drawtextured.cpp" />
+		<Unit filename="src/rendering/drawtextwindows.cpp" />
 		<Unit filename="src/rendering/renderers.hpp" />
+		<Unit filename="src/rendering/renderstack.hpp" />
 		<Unit filename="src/server/nethandlers.cpp" />
 		<Unit filename="src/server/nethandlers.hpp" />
 		<Unit filename="src/server/think.cpp" />

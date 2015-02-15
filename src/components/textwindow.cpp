@@ -2,6 +2,23 @@
 
 namespace Sys
 {
+    TextBox::TextBox(entityid_t myEntity) : Component(myEntity)
+    {
+        width_pixels = 370;
+        height_pixels = 20;
+        x_onscreen = 40;
+        y_onscreen = 345;
+        visible = 0;
+        background = check_texture_pile("sprites/textwindow.png");
+        TextBoxes.add(this);
+    }
+    TextBox::~TextBox()
+    {
+        TextBoxes.remove(this);
+    }
+    Collection<TextBox> TextBoxes;
+    
+    
     TextWindow::TextWindow(entityid_t myEntity) : Component(myEntity)
     {
         scrollback_size = 500;
@@ -9,6 +26,7 @@ namespace Sys
         height_pixels = 225;
         x_onscreen = 40;
         y_onscreen = 120;
+        visible = 0;
         background = check_texture_pile("sprites/textwindow.png");
         TextWindows.add(this);
     }

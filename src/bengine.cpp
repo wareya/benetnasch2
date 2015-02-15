@@ -100,6 +100,9 @@ namespace Sys
         return false;
     }
     
+    
+    std::vector<event_bubble> event_chain;
+    
     bool SDLEvents()
     {
         SDL_PumpEvents();
@@ -110,6 +113,13 @@ namespace Sys
             {
             case SDL_QUIT:
                 quit = true;
+                break;
+            default:
+                for ( auto func : event_chain )
+                {
+                    if( func(event) == CHAIN_FINISH )
+                        break;
+                }
                 break;
             }   
         }

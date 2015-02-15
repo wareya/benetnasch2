@@ -51,6 +51,7 @@ else
     source+=('src/client/think.cpp')
     source+=('src/client/nethandlers.cpp')
     source+=('src/client/scripting.cpp')
+    source+=('src/client/textinput.cpp')
     source+=('src/rendering/drawbackground.cpp')
     source+=('src/rendering/drawboxes.cpp')
     source+=('src/rendering/drawbullets.cpp')

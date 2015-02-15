@@ -20,6 +20,15 @@ namespace Sys
     SDL_Texture * check_texture_pile(std::string);
     
     bool FrameLimit();
+    
+    typedef enum
+    {
+        CHAIN_CONTINUE,
+        CHAIN_FINISH
+    } chainreturn;
+    typedef chainreturn(*event_bubble)(SDL_Event);
+    extern std::vector<event_bubble> event_chain;
+    
     bool SDLEvents();
 }
 
