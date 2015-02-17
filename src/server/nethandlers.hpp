@@ -13,5 +13,6 @@ namespace Sys
     void process_message_playerrequest(Net::Connection * connection, double buffer);
     
     void add_processors();
+    void clear_processors();
 }
 #endif

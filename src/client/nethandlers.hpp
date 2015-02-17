@@ -14,5 +14,6 @@ namespace Sys
     void process_message_serveplayer(Net::Connection * connection, double buffer);
 
     void add_processors();
+    void clear_processors();
 }
 #endif

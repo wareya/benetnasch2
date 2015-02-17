@@ -62,6 +62,7 @@ namespace Net
     extern std::unordered_map<unsigned int, processor> handlers;
     
     bool init ( int port );
+    void close ( );
     bool think ( ); // handle resending, callbacks, hostname lookups
     void send ( Connection * connection, bool droppable, unsigned short message, double buffer );
     void connect ( Connection * connection );

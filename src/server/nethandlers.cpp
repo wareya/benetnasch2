@@ -88,4 +88,8 @@ namespace Sys
         Net::assign ( 1, CLIENTMESSAGE::INPUT, &process_message_input );
         Net::assign ( 0, CLIENTMESSAGE::PLAYERREQUEST, &process_message_playerrequest );
     }
+    void clear_processors()
+    {
+        Net::handlers.clear();
+    }
 }

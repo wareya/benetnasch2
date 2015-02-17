@@ -132,4 +132,8 @@ namespace Sys
         assign ( 1, SERVERMESSAGE::PLAYERPOSITIONS, &process_message_playerpositions );
         assign ( 0, SERVERMESSAGE::SERVEPLAYER, &process_message_serveplayer );
     }
+    void clear_processors()
+    {
+        Net::handlers.clear();
+    }
 }

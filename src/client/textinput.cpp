@@ -10,19 +10,18 @@ namespace ClientEngine
 {
     Console console;
     bool consoleActive = 0;
-    /*
-    std::string Disconnect(std::string args)
+    
+    std::string Disconnect(std::vector<std::string> args)
     {
         // nethandlers.cpp
-        Sys::add_processors();
+        Sys::clear_processors();
         
-        // grab a port for responses from the server
-        Net::init(0);
+        Net::close();
         
-        // connect to localhost server
-        Sys::server = new Net::Connection( "127.0.0.1", 9180 );
-        Net::connections.push_back(Sys::server);
-        Sys::server->send_or_resend_connection_request();
+        delete Sys::server;
+        Sys::server = nullptr;
+        Net::connections.clear();
+        return std::string("Disconnected.");
     }
     
     std::string Connect(std::vector<std::string> args)
@@ -30,14 +29,24 @@ namespace ClientEngine
         // nethandlers.cpp
         Sys::add_processors();
         
+        if(args.size() < 2)
+            args.push_back(std::string("127.0.0.1"));
+        if(args.size() < 3)
+            args.push_back(std::string("9180"));
+        
+        int port = atoi(args[2].data());
+        if(port <= 0)
+            port = 9180;
+        
         // grab a port for responses from the server
         Net::init(0);
         
         // connect to localhost server
-        Sys::server = new Net::Connection( "127.0.0.1", 9180 );
+        Sys::server = new Net::Connection( args[1].data(), port );
         Net::connections.push_back(Sys::server);
         Sys::server->send_or_resend_connection_request();
-    }*/
+        return std::string("Connecting.");
+    }
     
     void RunConsoleCommand(std::string command)
     {
@@ -110,13 +119,14 @@ namespace ClientEngine
         if(strcmp(scraparg.data(), "") != 0)
             arglist.push_back(scraparg);
         
-        console.display->append_line("args:");
-        for(auto str : arglist)
-        {
-            std::string out;
-            out += '"' + str + '"' + "\n";
-            console.display->append_line(str.data());
-        }
+        if(arglist.size() < 1)
+            return;
+        std::string print;
+        if(strcmp(arglist[0].data(), "connect") == 0)
+            print = Connect(arglist);
+        if(strcmp(arglist[0].data(), "disconnect") == 0)
+            print = Disconnect(arglist);
+        console.display->append_line(print);
     }
     
     Sys::chainreturn Hotkeys(SDL_Event event)

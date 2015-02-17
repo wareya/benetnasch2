@@ -28,7 +28,7 @@ double udp_send_wrapper(double withandfrom, const char * hostname, double port)
 
 namespace Net
 {
-    double local_socket;
+    double local_socket = -1;
     // list of external connections
     std::vector<Connection*> connections;
     // assignment map of message id to function pointer which processes messages with that id
@@ -80,8 +80,15 @@ namespace Net
         #if defined(B_NET_DEBUG_PRINTPACK) || defined(B_NET_DEBUG_CONNECTION)
         std::cout << "Initing local socket on " << port << "\n";
         #endif
+        if(local_socket > 0)
+            close();
         local_socket = udp_bind(port);
         return 0;
+    }
+    void close ( )
+    {
+        socket_destroy(local_socket);
+        local_socket = -1;
     }
     
     // shuffle internal state as if handling events
