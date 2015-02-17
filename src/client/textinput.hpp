@@ -14,6 +14,8 @@ namespace ClientEngine
     
     extern Console console;
     
+    void RunConsoleCommand(std::string);
+    
     Sys::chainreturn Hotkeys(SDL_Event);
     Sys::chainreturn TextInput(SDL_Event);
 }

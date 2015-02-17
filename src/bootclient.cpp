@@ -96,17 +96,6 @@ bool main_init()
     Sys::view_x = 0;
     Sys::view_y = 0;
     
-    // nethandlers.cpp
-    Sys::add_processors();
-    
-    // grab a port for responses from the server
-    Net::init(0);
-    
-    // connect to localhost server
-    Sys::server = new Net::Connection( "127.0.0.1", 9180 );
-    Net::connections.push_back(Sys::server);
-    Sys::server->send_or_resend_connection_request();
-    
     // get mainloop ready
     Sys::tems.push_back(&sys_init);
     

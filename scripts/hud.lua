@@ -1,2 +1,1 @@
-bhud.print("test");
 

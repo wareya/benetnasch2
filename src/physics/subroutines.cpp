@@ -12,7 +12,7 @@ namespace Sys
             for(auto wallchunk : Sys::BoxDrawables)
             {
                 if(aabb_overlap(wallchunk->position->x,                      wallchunk->position->y,
-                                wallchunk->position->x + wallchunk->hull->w, wallchunk->position->y     + wallchunk->hull->h,
+                                wallchunk->position->x + wallchunk->hull->w, wallchunk->position->y + wallchunk->hull->h,
                                 character->position->x + x + character->hull->xoffset,
                                 character->position->y + y + character->hull->yoffset,
                                 character->position->x + x + character->hull->xoffset + character->hull->w,
@@ -80,11 +80,13 @@ namespace Sys
             float ysign = ssign(vvec);
             //printf("input: %f %f %f %f %f %f\n", x, y, width, height, hvec, vvec);
             
-            // make a motion bounding rect and include any collision rect that overlaps it
+            /* PART ONE: make a motion bounding rect and include any collision rect that overlaps it */
             
             auto which = place_meeting_which(x+(xsign < 0 ? width : 0)     , y+(ysign < 0 ? height : 0)     ,
                                              x+(xsign > 0 ? width : 0)+hvec, y+(ysign > 0 ? height : 0)+vvec);
             //std::cout << which.size() << "\n";
+            
+            /* PART TWO: ignore cases where we couldn't possibly collide with anything */
             
             if(which.size() == 0)
             {
@@ -93,19 +95,21 @@ namespace Sys
                 //puts("no collision at move_contact");
                 return std::tuple<float, float>(hvec, vvec);
             }
+            /* PART THREE: Figure out which things we could collide with, and which one is closest */
             else
             {
+                /* Consult the picture at the top of the function from hereon out */
                 auto oldx = x;
                 auto oldy = y;
                 
                 auto red_x = x + hvec + (xsign > 0 ? width  : 0);
                 auto red_y = y + vvec + (ysign > 0 ? height : 0);
-                //printf("red: %f %f\n", red_x, red_y);
                 
                 float furthest = 0;
                 float rx;
                 float ry;
                 // loop through each box to eject from and pick the one with the furthest ejection
+                /* ( Pick the closest box along the line of movement ) */
                 for(auto box : which) // this WILL run at least once
                 {
                     auto eject_x = x;
@@ -118,8 +122,6 @@ namespace Sys
                     auto inner_height = red_y - green_y;
                     auto inner_width  = red_x - green_x;
                     
-                    //printf("green and inner: %f %f %f %f\n", green_x, green_y, inner_width, inner_height);
-                    
                     float blue_x, blue_y;
                     if(hvec != 0)
                     {
@@ -127,16 +129,12 @@ namespace Sys
                         if(ssign(blue_y - green_y) == ysign)
                         {
                             blue_x = green_x;
-                            //puts("side ejection");
-                            //printf("blue: %f %f\n", blue_x, blue_y);
                             goto tail; // fuck you this is legit
                         }
                     }
                     // falls through to here if the blue dot is on the wrong side of green line
                     blue_x = red_x - (inner_height/vvec)*hvec;
                     blue_y = green_y;
-                    //puts("nonside ejection");
-                    //printf("blue: %f %f\n", blue_x, blue_y);
                     
                     tail:
                     eject_x = blue_x - (xsign > 0 ? width  : 0);
@@ -151,7 +149,7 @@ namespace Sys
                 }
                 x = rx;
                 y = ry;
-                //printf("moved: %f %f\n", x - oldx, y - oldy);
+                
                 character->position->x = x - character->hull->xoffset;
                 character->position->y = y - character->hull->yoffset;
                 

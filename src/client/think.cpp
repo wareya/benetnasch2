@@ -11,6 +11,8 @@ namespace Sys
     double lastInputUpdate;
     bool ClientThink()
     {
+        if(!server)
+            return 0;
         double now = Time::get_us();
         if(server->ready)
         {

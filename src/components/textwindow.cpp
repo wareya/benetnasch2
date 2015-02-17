@@ -21,7 +21,7 @@ namespace Sys
     
     TextWindow::TextWindow(entityid_t myEntity) : Component(myEntity)
     {
-        scrollback_size = 500;
+        scrollback_size = 5;
         width_pixels = 370;
         height_pixels = 225;
         x_onscreen = 40;
