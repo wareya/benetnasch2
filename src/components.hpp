@@ -37,6 +37,11 @@ namespace Sys
         {
             List.remove(dying_instance);
         }
+        void killall()
+        {
+            while(List.size() > 0)
+                delete *List.begin();
+        }
     };
     
 }

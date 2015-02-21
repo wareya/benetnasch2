@@ -16,7 +16,9 @@ namespace Sys
     }
     Player::~Player()
     {
+        puts("1");
         delete character;
+        puts("3");
         Players.remove(this);
     }
     void Player::spawn(double x, double y)

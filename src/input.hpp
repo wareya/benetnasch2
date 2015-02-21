@@ -30,6 +30,7 @@ namespace Input
         
         unsigned short getInputsAsBitfield();
         void cycleInput();
+        void clearInput();
         void setInputsAsBitfield(unsigned short invalue);
     };
     struct ClientInput

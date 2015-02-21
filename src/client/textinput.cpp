@@ -13,7 +13,7 @@ namespace ClientEngine
     
     std::string Disconnect(std::vector<std::string> args)
     {
-        // nethandlers.cpp
+        // shut down networking
         Sys::clear_processors();
         
         Net::close();
@@ -21,6 +21,21 @@ namespace ClientEngine
         delete Sys::server;
         Sys::server = nullptr;
         Net::connections.clear();
+        
+        // shut down client state
+        
+        Sys::myself = nullptr;
+        Sys::speeds.clear();
+        Sys::did_send_playerrequest = false;
+        
+        Sys::myinput.myplayerinput.clearInput(); // clear inputs
+        Sys::myinput.myplayerinput.cycleInput(); // clear history
+        
+        puts("-1");
+        Sys::Players.killall();
+        puts("5");
+        Sys::Bullets.killall();
+        
         return std::string("Disconnected.");
     }
     

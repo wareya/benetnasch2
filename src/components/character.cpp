@@ -30,6 +30,7 @@ namespace Sys
     }
     Character::~Character()
     {
+        puts("2");
         delete hull;
         delete head;
         delete body;

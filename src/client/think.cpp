@@ -26,7 +26,7 @@ namespace Sys
                 buffer_destroy(request);
                 did_send_playerrequest = true;
             }
-            if(!Physicsers::delta_is_too_damn_low) // TODO: Replace with rate
+            if(!Physicsers::delta_is_too_damn_low)
             {
                 if(Sys::myself and (now - lastInputUpdate)/1000 >= 20)// NOTE: 50 per second
                 {

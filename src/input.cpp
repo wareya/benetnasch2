@@ -27,6 +27,11 @@ namespace Input
             last_inputs[i] = inputs[i]; // this is a state update
         }
     }
+    void PlayerInput::clearInput()
+    {
+        for (int i = 0; i < NUMBER_INPUTS; i++)
+            inputs[i] = 0;
+    }
     unsigned short PlayerInput::getInputsAsBitfield()
     {
         unsigned short retvalue;
@@ -48,7 +53,7 @@ namespace Input
             inputs[i] = (invalue & mask)?1:0;
         }
     }
-        
+    
     void ClientInput::Init() // set up default key binds
     {
         corestate = SDL_GetKeyboardState(NULL);
@@ -63,10 +68,10 @@ namespace Input
     void ClientInput::Update()
     {
         auto mousebitmask = SDL_GetMouseState(&mx, &my);
+        // put previous inputs in their place
         myplayerinput.cycleInput();
         // zero-out existing inputs
-        for (int i = 0; i < NUMBER_INPUTS; i++)
-            myplayerinput.inputs[i] = 0;
+        myplayerinput.clearInput();
         // check key binds and apply appropriate inputs
         for (auto bind : keybindings)
         {
