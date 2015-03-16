@@ -32,6 +32,8 @@ namespace Net
         std::string hostname;
         int port;
         double hostname_lookup;
+        // wait for hostname lookup before initiating an outgoing connection
+        bool wait_for_hostname;
         
         std::string as_string();
         
@@ -40,6 +42,9 @@ namespace Net
         // early undroppable packets are discarded
         long last_droppable_packet;
         long last_undroppable_packet;
+        
+        // last time we heard back from the other end of the connection
+        double last_time;
         
         // last packet that the machine on the other end responded too
         long acked_undroppable_packet;
@@ -67,6 +72,11 @@ namespace Net
     void send ( Connection * connection, bool droppable, unsigned short message, double buffer );
     void connect ( Connection * connection );
     int assign ( bool droppable, unsigned short message, processor );
+}
+
+namespace Sys
+{
+    void DisconnectionPseudoCallback(Net::Connection * connection);
 }
 
 #endif // guard

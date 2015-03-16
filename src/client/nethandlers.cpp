@@ -13,6 +13,42 @@
 
 namespace Sys
 {
+    void DisconnectionPseudoCallback(Net::Connection * connection)
+    {
+        // shut down networking
+        Sys::clear_processors();
+        
+        Net::close();
+        
+        delete Sys::server;
+        Sys::server = nullptr;
+        Net::connections.clear();
+        
+        // shut down client state
+        
+        Sys::myself = nullptr;
+        Sys::speeds.clear();
+        Sys::did_send_playerrequest = false;
+        
+        Sys::myinput.myplayerinput.clearInput(); // clear inputs
+        Sys::myinput.myplayerinput.cycleInput(); // clear history
+        
+        Sys::Players.killall();
+        Sys::Bullets.killall();
+        
+        Sys::PlayerList::Clear();
+    }
+
+    void process_message_removeplayer(Net::Connection * connection, double buffer)
+    {
+        auto pid = read_ubyte(buffer);
+        if(pid == (playerid)(-1))
+            return;
+        std::cout << "removing player " << pid << "\n";
+        auto player = PlayerList::Slots[pid]->player;
+        delete player;
+        Sys::PlayerList::Remove(pid);
+    }
 
     void process_message_addplayer(Net::Connection * connection, double buffer)
     {
@@ -129,6 +165,7 @@ namespace Sys
     {
         assign ( 1, SERVERMESSAGE::PLAYERINPUTS, &process_message_playerinputs );
         assign ( 0, SERVERMESSAGE::ADDPLAYER, &process_message_addplayer );
+        assign ( 0, SERVERMESSAGE::REMOVEPLAYER, &process_message_removeplayer );
         assign ( 1, SERVERMESSAGE::PLAYERPOSITIONS, &process_message_playerpositions );
         assign ( 0, SERVERMESSAGE::SERVEPLAYER, &process_message_serveplayer );
     }

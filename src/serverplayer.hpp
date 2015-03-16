@@ -4,6 +4,8 @@
 #include "components/player.hpp"
 #include "network.hpp"
 
+#include <deque>
+
 namespace Sys
 {
     typedef unsigned char playerid;
@@ -15,10 +17,12 @@ namespace Sys
     };
     namespace PlayerList
     {
-        extern std::vector<ServerPlayer*> Slots;
+        extern std::deque<ServerPlayer*> Slots;
         unsigned AddPlayer(Net::Connection * connection, Player * player);
         void Remove(playerid);
+        void Clear();
         ServerPlayer * FromConnection(Net::Connection * connection);
+        playerid IdFromConnection(Net::Connection * connection);
     }
 }
 

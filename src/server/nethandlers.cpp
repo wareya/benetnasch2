@@ -11,6 +11,22 @@
 
 namespace Sys
 {
+    void DisconnectionPseudoCallback(Net::Connection * connection)
+    {
+        auto serverplayer = PlayerList::IdFromConnection(connection);
+        if(serverplayer == (playerid)(-1))
+            return;
+        auto player = PlayerList::Slots[serverplayer]->player;
+        delete player;
+        PlayerList::Remove(serverplayer);
+        
+        auto mirror = buffer_create();
+        write_ubyte(mirror, serverplayer);
+        for(auto serverplayer : PlayerList::Slots)
+            Net::send(serverplayer->connection, 0, SERVERMESSAGE::REMOVEPLAYER, mirror);
+        buffer_destroy(mirror);
+    }
+    
     void process_message_input(Net::Connection * connection, double buffer)
     {
         auto serverplayer = Sys::PlayerList::FromConnection(connection);

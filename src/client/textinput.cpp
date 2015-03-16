@@ -13,29 +13,7 @@ namespace ClientEngine
     
     std::string Disconnect(std::vector<std::string> args)
     {
-        // shut down networking
-        Sys::clear_processors();
-        
-        Net::close();
-        
-        delete Sys::server;
-        Sys::server = nullptr;
-        Net::connections.clear();
-        
-        // shut down client state
-        
-        Sys::myself = nullptr;
-        Sys::speeds.clear();
-        Sys::did_send_playerrequest = false;
-        
-        Sys::myinput.myplayerinput.clearInput(); // clear inputs
-        Sys::myinput.myplayerinput.cycleInput(); // clear history
-        
-        puts("-1");
-        Sys::Players.killall();
-        puts("5");
-        Sys::Bullets.killall();
-        
+        Sys::DisconnectionPseudoCallback(nullptr); // client disconnection ignores connection parameter
         return std::string("Disconnected.");
     }
     
@@ -59,7 +37,7 @@ namespace ClientEngine
         // connect to localhost server
         Sys::server = new Net::Connection( args[1].data(), port );
         Net::connections.push_back(Sys::server);
-        Sys::server->send_or_resend_connection_request();
+        Sys::server->wait_for_hostname = true;
         return std::string("Connecting.");
     }
     

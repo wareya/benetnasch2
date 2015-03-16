@@ -1,5 +1,6 @@
 #include "network.hpp"
 #include "blib.hpp"
+
 #include <string>
 
 #if defined(B_NET_DEBUG_PRINTPACK) || defined(B_NET_DEBUG_CONNECTION)
@@ -45,7 +46,10 @@ namespace Net
     , ready(false)
     , connection_send_time(0)
     {
+        last_time = Time::get_us();
         hostname_lookup = ip_lookup_create(hostname);
+        puts("making connection");
+        wait_for_hostname = false;
     }
     
     // if relevant, send a connection request to the desired remote host (client code)
@@ -96,6 +100,7 @@ namespace Net
     {
         trash_buffer(local_socket);
         // things regarding remote connections...
+        std::vector<Connection*> marked_for_removal;
         for(auto connection : connections)
         {
             // update hostname lookups (typically just for the server)
@@ -111,6 +116,7 @@ namespace Net
                     #endif
                     ip_lookup_destroy(connection->hostname_lookup);
                     connection->hostname_lookup = -1;
+                    connection->wait_for_hostname = false;
                 }
             }
             // check for probably-dropped messages and resend them
@@ -128,11 +134,28 @@ namespace Net
                 }
             }
             // resend connection request if we haven't heard back for the first time yet
-            if(!connection->ready)
+            if(!connection->ready and !connection->wait_for_hostname)
             {
                 if (Time::get_us() - connection->connection_send_time > 1000*1000) // resend every second until we get an ack
+                {
+                    std::cout << "HOSTNAME IS " << connection->hostname << "\n";
                     connection->send_or_resend_connection_request();
+                }
             }
+            // close connection if we haven't heard from the other party in longer than ten seconds
+            if(Time::get_us() - connection->last_time > 10 * 1000000) // microseconds per second
+            {
+                Sys::DisconnectionPseudoCallback(connection);
+                marked_for_removal.push_back(connection);
+                continue;
+            }
+        }
+        for(auto connection : marked_for_removal)
+        {
+            unsigned long i;
+            for (i = 0; connections[i] != connection and i < connections.size(); ++i);
+            if(i != connections.size())
+                connections.erase(connections.begin()+i);
         }
         /*  Packet format
             ubyte type:
@@ -222,9 +245,11 @@ namespace Net
                 #endif
                 write_ubyte(local_socket, CONNECTION_ACKNOWLEDGED);
                 udp_send_wrapper(local_socket, remote_ip, remote_port);
+                continue;
             }
             
             // if we've fallen through to here it's a "message"
+            remote->last_time = Time::get_us();
             switch(int(type))
             {
             // high-level messages
