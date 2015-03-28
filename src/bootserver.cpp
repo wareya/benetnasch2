@@ -51,6 +51,7 @@ bool main_init()
     
     // start listening for clients on 9180
     Net::init(9180);
+    Net::setup_channels();
     
     // get mainloop ready to get itself ready
     Sys::tems.push_back(&sys_init);

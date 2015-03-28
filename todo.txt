@@ -1,0 +1,5 @@
+TODO:
+[x] Implement checkpoints/channels
+[ ] Write a basic menu system
+[ ] Attach menu buttons to console commands
+[x] Write console command for connecting to server

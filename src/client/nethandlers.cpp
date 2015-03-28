@@ -78,6 +78,7 @@ namespace Sys
             #ifdef B_NET_DEBUG_PRINTPACK
                 std::cout << "p pix: " << pix << " out of " << Sys::PlayerList::Slots.size() << "\n";
             #endif
+            puts("GOT POSITIONS");
             if(serverplayer)
             {
                 auto input = &serverplayer->player->input;

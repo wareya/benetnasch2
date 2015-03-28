@@ -50,6 +50,12 @@ namespace Net
         hostname_lookup = ip_lookup_create(hostname);
         puts("making connection");
         wait_for_hostname = false;
+        
+        for(int i = 0; i < CHANNEL::NUMCHANNELS; i++)
+        {
+            send_iterators.push_back(0);
+            rec_iterators.push_back(0);
+        }
     }
     
     // if relevant, send a connection request to the desired remote host (client code)
@@ -163,6 +169,7 @@ namespace Net
             {
                 long id
                 ushort message_enumeration
+                droppable with dependency? uint checkpoint
                 remainder message
             }
             acknowledgment
@@ -172,6 +179,8 @@ namespace Net
             connection/acknowledgement
             {}
         */
+        
+        //TODO: CIRCULAR ITERATORS
         
         // Read out received messages
         while(udp_receive(local_socket))
@@ -269,8 +278,18 @@ namespace Net
                 // ACK undroppable packets immediately
                 if(type == MESSAGE_UNDROPPABLE)
                 {
-                    if(id == remote->last_undroppable_packet+1)
+                    if(id == remote->last_undroppable_packet+1) // TODO: loop iterators
                     {
+                        if(channel_incrementors.count(message)) // Find which channels depend on this undroppable message
+                        {
+                            for(auto n : channel_incrementors[message]) // Increment them to mimick the server
+                            {
+                                remote->rec_iterators[n]++;
+                                #ifdef B_NET_DEBUG_PRINTPACK
+                                    std::cout << "Incremented rec iterator " << n << " to " << remote->rec_iterators[n] << "\n";
+                                #endif
+                            }
+                        }
                         #ifdef B_NET_DEBUG_PRINTPACK
                             puts("Acking message");
                         #endif
@@ -290,14 +309,31 @@ namespace Net
                 }
                 if(type == MESSAGE_DROPPABLE)
                 {
-                    if(id > remote->last_droppable_packet)
-                        remote->last_droppable_packet = id;
-                    else
+                    unsigned int checkpoint = 0xFFFF;
+                    bool badcheckpoint = false;
+                    if(message_dependencies.count(message))
+                    {
+                        checkpoint = read_uint(local_socket);
+                        badcheckpoint = (checkpoint < remote->rec_iterators[message_dependencies[message]]);
+                    }
+                    if(id <= remote->last_droppable_packet) // TODO: loop iterators
                     {
                         #ifdef B_NET_DEBUG_MISTAKES
                             puts("Ignoring message (out-of-order)");
                         #endif
                         break; // out of order (late)
+                    }
+                    else if(badcheckpoint) // TODO: loop iterators
+                    {
+                        #ifdef B_NET_DEBUG_MISTAKES
+                            puts("Ignoring message (bad checkpoint)");
+                            std::cout << " Checkpoint: " << checkpoint << "\n";
+                        #endif
+                        break; // out of order (checkpoint)
+                    }
+                    else
+                    {
+                        remote->last_droppable_packet = id;
                     }
                 }
                 // convert message and droppable to handler ID TODO: pure function
@@ -365,13 +401,36 @@ namespace Net
         {
             write_uint(temp, connection->sent_droppable_packet);
             connection->sent_droppable_packet++;
+            #ifdef B_NET_DEBUG_PRINTPACK
+                puts("HELL YEAH MOTHERFUCKER SENDING A DROPPABLE MESSAGE");
+            #endif
         }
         else
         {
             write_uint(temp, connection->sent_undroppable_packet);
             connection->sent_undroppable_packet++;
+            if(channel_incrementors.count(message))
+            {
+                for(auto n : channel_incrementors[message])
+                {
+                    connection->send_iterators[n]++;
+                    #ifdef B_NET_DEBUG_PRINTPACK
+                        std::cout << "Incremented send iterator " << n << " to " << connection->send_iterators[n] << "\n";
+                    #endif
+                }
+            }
         }
         write_ushort(temp, message);
+        if(droppable)
+        {
+            if(message_dependencies.count(message))
+            {
+                write_uint(temp, connection->send_iterators[message_dependencies[message]]);
+                #ifdef B_NET_DEBUG_PRINTPACK
+                    std::cout << "Wrote send iterator " << message_dependencies[message] << " as " << connection->send_iterators[message_dependencies[message]] << "\n";
+                #endif
+            }
+        }
         write_buffer(temp, buffer);
         
         trash_buffer(local_socket);
@@ -396,7 +455,7 @@ namespace Net
             connection->undroppable_send_queue.push_back(new Message ({connection->sent_undroppable_packet-1, droppable, message, temp, Time::get_us()}));
             buffer_set_readpos(temp, 0);
         }
-        else // think handles clean of undroppables, but we can trash the droppables here
+        else // think handles cleaning of undroppables, but we can trash the droppables here
         {
             buffer_destroy(temp);
         }

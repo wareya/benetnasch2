@@ -6,6 +6,9 @@
 #include <string>
 #include "blib.hpp"
 
+#include "netconst.hpp"
+#include "channelmap.hpp"
+
 namespace Net
 {
     enum { // low-level networking header enumerations
@@ -58,6 +61,9 @@ namespace Net
         double connection_send_time;
         
         std::vector<Message*> undroppable_send_queue;
+        
+        std::vector<unsigned long> rec_iterators;
+        std::vector<unsigned long> send_iterators;
     };
     
     extern std::vector<Connection*> connections;

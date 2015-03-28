@@ -17,6 +17,7 @@ source=(
  "src/benetnasch.cpp"
  "src/physics.cpp"
  "src/network.cpp"
+ "src/channelmap.cpp"
  "src/serverplayer.cpp"
  "src/components/backgrounddrawable.cpp"
  "src/components/boxdrawable.cpp"

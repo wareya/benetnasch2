@@ -91,6 +91,7 @@ bool main_init()
     // load faucnet dll and assign function pointers
     if(faucnet_init() < 0)
         return 0;
+    Net::setup_channels();
     
     // something for the renderers! yeah!
     Sys::view_x = 0;

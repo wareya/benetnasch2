@@ -40,7 +40,9 @@ namespace Sys
                     write_ubyte(input, Sys::myinput.myplayerinput.aimDistance);
                     Net::send(Sys::server, 1, CLIENTMESSAGE::INPUT, input);
                     buffer_destroy(input);
-                    
+                    #ifdef B_NET_DEBUG_PRINTPACK
+                        puts("SENDING INPUT MOTHERFUCKER");
+                    #endif
                     if(Sys::myself->character)
                     {
                         Sys::speeds.push_back(Sys::myself->character->hspeed);

@@ -29,6 +29,8 @@
 		<Unit filename="src/boot.hpp" />
 		<Unit filename="src/bootclient.cpp" />
 		<Unit filename="src/bootserver.cpp" />
+		<Unit filename="src/channelmap.cpp" />
+		<Unit filename="src/channelmap.hpp" />
 		<Unit filename="src/client/clientdata.cpp" />
 		<Unit filename="src/client/clientdata.hpp" />
 		<Unit filename="src/client/nethandlers.cpp" />
