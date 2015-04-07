@@ -12,18 +12,20 @@
 namespace Net
 {
     enum { // low-level networking header enumerations
-        MESSAGE_UNDROPPABLE,
-        MESSAGE_DROPPABLE,
+        MESSAGE_GAMELOGIC,
         ACKNOWLEDGMENT,
         CONNECTION_REQUEST,
         CONNECTION_ACKNOWLEDGED
+    };
+    enum {
+        UNDROPPABLE,
+        DROPPABLE
     };
     extern double local_socket; // socket with which to receive/send datagrams
     struct Message // Type containing information representing a high-level message
     {
         long id; // chronological sequence indicator
-        bool droppable; // whether this message should use the droppable or the undroppable system
-        unsigned short message; // type of message (unique between whether droppable)
+        unsigned short message; // type of message (implies whether droppable)
         double buffer; // faucnet buffer reference containing information
         double sendtime; // time at which the message was sent
     };
@@ -75,9 +77,9 @@ namespace Net
     bool init ( int port );
     void close ( );
     bool think ( ); // handle resending, callbacks, hostname lookups
-    void send ( Connection * connection, bool droppable, unsigned short message, double buffer );
+    void send ( Connection * connection, unsigned short message, double buffer );
     void connect ( Connection * connection );
-    int assign ( bool droppable, unsigned short message, processor );
+    int assign ( unsigned short message, processor );
 }
 
 namespace Sys

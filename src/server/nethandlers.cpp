@@ -23,7 +23,7 @@ namespace Sys
         auto mirror = buffer_create();
         write_ubyte(mirror, serverplayer);
         for(auto serverplayer : PlayerList::Slots)
-            Net::send(serverplayer->connection, 0, SERVERMESSAGE::REMOVEPLAYER, mirror);
+            Net::send(serverplayer->connection, SERVERMESSAGE::REMOVEPLAYER, mirror);
         buffer_destroy(mirror);
     }
     
@@ -87,22 +87,22 @@ namespace Sys
             {
                 auto current = Sys::PlayerList::Slots[i]->connection;
                 std::cout << "Sending player " << playerslot << " to " << i << " (" << current->as_string() << ")\n";
-                Net::send(current, 0, SERVERMESSAGE::ADDPLAYER, response);
+                Net::send(current, SERVERMESSAGE::ADDPLAYER, response);
             }
             
             buffer_clear(response);
             
             // tell the new player about everyone, including theirself
             build_message_serveplayer(serverplayer, response);
-            Net::send(connection, 0, SERVERMESSAGE::SERVEPLAYER, response);
+            Net::send(connection, SERVERMESSAGE::SERVEPLAYER, response);
             buffer_destroy(response);
         }
     }
     
     void add_processors()
     {
-        Net::assign ( 1, CLIENTMESSAGE::INPUT, &process_message_input );
-        Net::assign ( 0, CLIENTMESSAGE::PLAYERREQUEST, &process_message_playerrequest );
+        Net::assign ( CLIENTMESSAGE::INPUT, &process_message_input );
+        Net::assign ( CLIENTMESSAGE::PLAYERREQUEST, &process_message_playerrequest );
     }
     void clear_processors()
     {

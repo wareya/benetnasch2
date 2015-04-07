@@ -42,7 +42,7 @@ namespace Sys
                 }
             }
             for(auto serverplayer : PlayerList::Slots)
-                Net::send(serverplayer->connection, 1, update, theresponse);
+                Net::send(serverplayer->connection, update, theresponse);
             
             buffer_destroy(theresponse);
         }

@@ -22,7 +22,7 @@ namespace Sys
                 auto request = buffer_create();
                 write_ubyte(request, 6); // len
                 write_string(request, "Wareya");
-                Net::send(Sys::server, 0, CLIENTMESSAGE::PLAYERREQUEST, request);
+                Net::send(Sys::server, CLIENTMESSAGE::PLAYERREQUEST, request);
                 buffer_destroy(request);
                 did_send_playerrequest = true;
             }
@@ -38,7 +38,7 @@ namespace Sys
                     write_ushort(input, Sys::myinput.myplayerinput.getInputsAsBitfield());
                     write_ushort(input, Sys::myinput.myplayerinput.aimDirection/360.0*0x10000);
                     write_ubyte(input, Sys::myinput.myplayerinput.aimDistance);
-                    Net::send(Sys::server, 1, CLIENTMESSAGE::INPUT, input);
+                    Net::send(Sys::server, CLIENTMESSAGE::INPUT, input);
                     buffer_destroy(input);
                     #ifdef B_NET_DEBUG_PRINTPACK
                         puts("SENDING INPUT MOTHERFUCKER");

@@ -262,8 +262,7 @@ namespace Net
             switch(int(type))
             {
             // high-level messages
-            case MESSAGE_UNDROPPABLE:
-            case MESSAGE_DROPPABLE:
+            case MESSAGE_GAMELOGIC:
             {
                 auto id = read_uint(local_socket);
                 auto message = read_ushort(local_socket);
@@ -276,7 +275,8 @@ namespace Net
                 #endif
                 
                 // ACK undroppable packets immediately
-                if(type == MESSAGE_UNDROPPABLE)
+                auto kind = message_droppability[message];
+                if(kind == UNDROPPABLE)
                 {
                     if(id == remote->last_undroppable_packet+1) // TODO: loop iterators
                     {
@@ -307,7 +307,7 @@ namespace Net
                     }
                     // TODO FUTURE: Cache packets ignored for being before their predecessors so that catching up is faster
                 }
-                if(type == MESSAGE_DROPPABLE)
+                if(kind == DROPPABLE)
                 {
                     unsigned int checkpoint = 0xFFFF;
                     bool badcheckpoint = false;
@@ -337,7 +337,7 @@ namespace Net
                     }
                 }
                 // convert message and droppable to handler ID TODO: pure function
-                message = unsigned(message) | (unsigned(type) << (sizeof(unsigned short)*8));
+                message = unsigned(message);// | (unsigned(type) << (sizeof(unsigned short)*8));
                 if(handlers.find(message) != handlers.end())
                 {
                     if(handlers[message] != NULL)
@@ -391,13 +391,14 @@ namespace Net
     }
     
     // high-level function to send a message according to parameters
-    void send ( Connection * connection, bool droppable, unsigned short message, double buffer )
+    void send ( Connection * connection, unsigned short message, double buffer )
     {
+        bool isdroppable = message_droppability[message];
         // blank buffer for porpoises
         double temp = buffer_create();
         // write up header etc to temp buffer
-        write_ubyte(temp, droppable);
-        if(droppable)
+        write_ubyte(temp, MESSAGE_GAMELOGIC);
+        if(isdroppable == DROPPABLE)
         {
             write_uint(temp, connection->sent_droppable_packet);
             connection->sent_droppable_packet++;
@@ -421,7 +422,7 @@ namespace Net
             }
         }
         write_ushort(temp, message);
-        if(droppable)
+        if(isdroppable == DROPPABLE)
         {
             if(message_dependencies.count(message))
             {
@@ -450,21 +451,21 @@ namespace Net
             std::cout << "Sent a message to " << connection->hostname.c_str() << ":" << connection->port << "\n";
         #endif
             
-        if(!droppable) // we want to store our send buffer (rather than the raw buffer, for simplicity's sake) for resending
+        if(isdroppable == UNDROPPABLE) // we want to store our send buffer (rather than the raw buffer, for simplicity's sake) for resending
         {
-            connection->undroppable_send_queue.push_back(new Message ({connection->sent_undroppable_packet-1, droppable, message, temp, Time::get_us()}));
+            connection->undroppable_send_queue.push_back(new Message ({connection->sent_undroppable_packet-1, message, temp, Time::get_us()}));
             buffer_set_readpos(temp, 0);
         }
-        else // think handles cleaning of undroppables, but we can trash the droppables here
+        else // "think" will clean up undroppables, but we can trash the droppables here
         {
             buffer_destroy(temp);
         }
     }
     
     
-    int assign ( bool droppable, unsigned short message, processor processor )
+    int assign ( unsigned short message, processor processor )
     {
-        unsigned int key = (droppable << (sizeof(unsigned short)*8)) | message;
+        unsigned int key = message;//(droppable << (sizeof(unsigned short)*8)) | message;
         #ifdef B_NET_DEBUG_PRINTPACK
         std::cout << "Trying to bind a processor to " << message << "\n";
         std::cout << "Key: " << key << "\n";

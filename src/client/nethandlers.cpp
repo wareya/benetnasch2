@@ -164,11 +164,11 @@ namespace Sys
 
     void add_processors()
     {
-        assign ( 1, SERVERMESSAGE::PLAYERINPUTS, &process_message_playerinputs );
-        assign ( 0, SERVERMESSAGE::ADDPLAYER, &process_message_addplayer );
-        assign ( 0, SERVERMESSAGE::REMOVEPLAYER, &process_message_removeplayer );
-        assign ( 1, SERVERMESSAGE::PLAYERPOSITIONS, &process_message_playerpositions );
-        assign ( 0, SERVERMESSAGE::SERVEPLAYER, &process_message_serveplayer );
+        assign ( SERVERMESSAGE::PLAYERINPUTS, &process_message_playerinputs );
+        assign ( SERVERMESSAGE::ADDPLAYER, &process_message_addplayer );
+        assign ( SERVERMESSAGE::REMOVEPLAYER, &process_message_removeplayer );
+        assign ( SERVERMESSAGE::PLAYERPOSITIONS, &process_message_playerpositions );
+        assign ( SERVERMESSAGE::SERVEPLAYER, &process_message_serveplayer );
     }
     void clear_processors()
     {

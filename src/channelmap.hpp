@@ -12,6 +12,7 @@ namespace Net
     typedef unsigned int inc;
     extern std::map<msg, std::vector<inc>> channel_incrementors;
     extern std::map<msg, inc> message_dependencies;
+    extern std::map<msg, bool> message_droppability;
     
     void setup_channels();
 }
