@@ -12,17 +12,25 @@ namespace Sys
         
         position = new Position(myEntity, argx, argy);
         
-        sprite = new TexturedDrawable(Ent::New(), argx, argy, 0, 0);
-        weaponsprite = new RotatingTexturedDrawable(sprite->entityID, argx, argy, -8, 8, 0, 20, 16);
-        
-        sprite->set_sprite(image_stand);
-        weaponsprite->set_sprite(image_weapon);
-        
-        delete sprite->position;
-        sprite->position = position;
-        
-        delete weaponsprite->position;
-        weaponsprite->position = position;
+        #ifdef CLIENT
+            stand = new TexturedDrawable(Ent::New(), argx, argy, 0, 0);
+            run = new AnimatedTexturedDrawable(stand->entityID, argx, argy, 0, 0, 4, 32, 48);
+            weaponsprite = new RotatingTexturedDrawable(stand->entityID, argx, argy, -8, 8, 0, 20, 16);
+            
+            stand->set_sprite(image_stand);
+            run->set_sprite(image_run);
+            run->visible = false;
+            weaponsprite->set_sprite(image_weapon);
+            
+            delete stand->position;
+            stand->position = position;
+            
+            delete run->position;
+            run->position = position;
+            
+            delete weaponsprite->position;
+            weaponsprite->position = position;
+        #endif
         
         puts("making a character");
         
@@ -34,8 +42,11 @@ namespace Sys
         delete head;
         delete body;
         delete position;
-        delete sprite;
-        delete weaponsprite;
+        #ifdef CLIENT
+            delete stand;
+            delete run;
+            delete weaponsprite;
+        #endif
         Characters.remove(this);
     }
     void Character::center_on(float x, float y)

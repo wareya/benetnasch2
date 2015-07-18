@@ -16,7 +16,9 @@
 #include "physics.hpp"
 #include "serverplayer.hpp"
 #include "components/textwindow.hpp"
+#include "samples.hpp"
 
+#include <fauxmix/api.hpp>
 
 // push systems into the mainloop
 bool sys_init()
@@ -77,10 +79,19 @@ bool main_init()
     if (Sys::Renderer == nullptr)
         std::cout << "Could not create an SDL renderer: " << SDL_GetError() << std::endl;
     
+    fauxmix_dll_init();
+    sample::ost = fauxmix_sample_load("sounds/duty.opus");
+    sample::footstep1 = fauxmix_sample_load("sounds/foot1.wav");
+    sample::footstep2 = fauxmix_sample_load("sounds/foot2.wav");
+    sample::footstep3 = fauxmix_sample_load("sounds/foot3.wav");
+    
+    sample::emitter_ost = fauxmix_emitter_create(sample::ost);
+    fauxmix_emitter_loop(sample::emitter_ost, true);
+    fauxmix_emitter_fire(sample::emitter_ost);
+    
     // don't know if I actually use randomness anywhere
     srand(time(NULL));
     SDL_PumpEvents();
-    
     
     // sets up hud and such
     Lua::scripting_init();

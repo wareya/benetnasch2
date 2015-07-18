@@ -30,18 +30,24 @@ namespace Sys
                     /*
                      *  handle accelerations
                      */
-                    float taccel = 1000*delta;
-                    float gravity = 800*delta;
+                    float accel = 1000*delta;
+                    float aaccel = 1000*delta;
+                    float gravity = 720*delta;
                     float max_gravity = 2000;
                     float jumpspeed = -300;
+                    float fric_overmoving = pow(0.4, delta);
                     float fric_moving = pow(0.2, delta);
                     float fric_counter = pow(0.01, delta);
                     float fric_still = pow(0.025, delta);
                     float fric_sticky = 100*delta;
+                    float fric_air = pow(0.15, delta);
+                    float fric_air_threshhold = 400;
                     int crawlspeed = 75;
                     int walkspeed = 170;
-                    int runspeed = 300;
-                    float struggle = 0.6;
+                    int runspeed = 240;
+                    int airrunspeed = 260;
+                    float struggle1 = 0.65;
+                    float struggle2 = 0.5;
                     
                     auto & input = player->input;
                     int direction = (input.inputs[Input::RIGHT] - input.inputs[Input::LEFT]);
@@ -51,19 +57,6 @@ namespace Sys
                     auto rawangle = input.aimDirection;
                     auto dir = deg2rad(rawangle);
                     
-                    if(rawangle >= 90 and rawangle < 270) // aiming generally leftwards (90 is up)
-                    {
-                        character->weaponsprite->angle = rawangle-180;
-                        character->weaponsprite->flip = true;
-                        character->sprite->flip = true;
-                    }
-                    else // generally rightwards
-                    {
-                        character->weaponsprite->angle = rawangle;
-                        character->weaponsprite->flip = false;
-                        character->sprite->flip = false;
-                    }
-                    
                     int shooting = (input.inputs[Input::SHOOT] and not input.last_inputs[Input::SHOOT]);
                     if(shooting)
                     {
@@ -72,11 +65,23 @@ namespace Sys
                         new Bullet(Ent::New(), character->center_x(), character->center_y(), cos(dir) * shotspeed + hspeed, -sin(dir) * shotspeed, 1);
                     }
                     
+                    int whichrunspeed;
+                    int taccel;
+                    if(!place_meeting(character, 0, crop1(gravity))) // in air
+                    {
+                        taccel = aaccel;
+                        whichrunspeed = airrunspeed;
+                    }
+                    else
+                    {
+                        taccel = accel;
+                        whichrunspeed = runspeed;
+                    }
                     // If we're moving too slowly, our acceleration should be dampened
                     if (direction == int(sign(hspeed)) or hspeed == 0)
                     {
                         if (abs(hspeed) >= walkspeed)
-                            taccel *= struggle;
+                            taccel *= struggle2;
                         else if (abs(hspeed) >= crawlspeed)
                             ;
                         else
@@ -84,30 +89,48 @@ namespace Sys
                             float factor =
                               (float(abs(hspeed)) - crawlspeed)
                               / walkspeed;
-                            taccel *= lerp(struggle, 1.0f, factor);
+                            taccel *= lerp(struggle1, 1.0f, factor);
                         }
                     }
                     
                     // calculate post-control speed
-                    float walk_solution;
-                    if(abs(hspeed) < crawlspeed) // no friction if extremely slow
-                        walk_solution = hspeed + taccel*direction;
-                    else // friction if we're extremely fast
-                        walk_solution = (hspeed + taccel*direction) * fric_moving;
                     
-                    // If we're changing directions, we do either friction OR deacceleration; whichever one is stronger
-                    // this is the counter-friction
-                    auto fric_solution = hspeed * fric_counter; // same sign
-                    
-                    if(direction < 0) // prefer more negative
-                        hspeed = minimum(walk_solution, fric_solution);
-                    if(direction > 0) // more positive
-                        hspeed = maximum(walk_solution, fric_solution);
-                        
                     auto hsign = (0 < hspeed) - (hspeed < 0);
                     
-                    if (abs(hspeed) > runspeed)
-                        hspeed = hsign * runspeed;
+                    auto started_in_excess = abs(hspeed) > whichrunspeed and direction == hsign;
+                    
+                    if(!started_in_excess)
+                    {
+                        float walk_solution;
+                        if(abs(hspeed) < crawlspeed) // no friction if extremely slow
+                            walk_solution = hspeed + taccel*direction;
+                        else // friction if we're extremely fast
+                            walk_solution = (hspeed + taccel*direction) * fric_moving;
+                        
+                        // If we're changing directions, we do either friction OR deacceleration; whichever one is stronger
+                        // this is the counter-friction
+                        auto fric_solution = hspeed * fric_counter; // same sign
+                        
+                        if(direction < 0) // prefer more negative
+                            hspeed = minimum(walk_solution, fric_solution);
+                        if(direction > 0) // more positive
+                            hspeed = maximum(walk_solution, fric_solution);
+                            
+                        hsign = (0 < hspeed) - (hspeed < 0);
+                        
+                        if (abs(hspeed) > whichrunspeed and started_in_excess)
+                            hspeed = hsign * whichrunspeed;
+                    }
+                    else // did start in excess
+                    {
+                        if(place_meeting(character, 0, crop1(gravity))) // run friction if on ground
+                        {
+                            hspeed *= fric_overmoving;
+                        }
+                        if(abs(hspeed) < whichrunspeed and direction == hsign) // set speed to max if friction set us below our desired speed
+                            hspeed = whichrunspeed*hsign;
+                    }
+                    
                     if (direction == 0)
                     {
                         hspeed *= fric_still;
@@ -124,6 +147,12 @@ namespace Sys
                     }
                     if(jumping)
                         vspeed = jumpspeed;
+                    auto abv = fabs(vspeed);
+                    if(abv > fric_air_threshhold)
+                    {
+                        abv = (abv-fric_air_threshhold)*fric_air;
+                        vspeed = sign(vspeed)*(abv+fric_air_threshhold);
+                    }
                     
                     /*
                      *  muh movement solving
@@ -243,6 +272,23 @@ namespace Sys
                     hspeed /= delta;
                     vspeed /= delta;
                     //puts("end frame");
+                    
+                    #ifdef CLIENT
+                        auto aiming_left = (rawangle >= 90 and rawangle < 270);
+                        
+                        character->weaponsprite->angle = rawangle-180*aiming_left;
+                        character->weaponsprite->flip = aiming_left;
+                        character->stand->flip = aiming_left;
+                        character->run->flip = aiming_left;
+                        
+                        auto running = (fabs(hspeed) > crawlspeed);
+                        character->stand->visible = !running;
+                        character->run->visible = running;
+                        if(running)
+                            character->run->index += hspeed/35*delta*(character->run->flip*-2+1);
+                        else
+                            character->run->index = 0;
+                    #endif
                     
                     player->input.cycleInput();
                 }

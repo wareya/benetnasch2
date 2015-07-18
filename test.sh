@@ -1,12 +1,6 @@
 #!/bin/bash
 
 
-mkdir -p obj
-mkdir -p obj/physics
-mkdir -p obj/rendering
-mkdir -p obj/components
-mkdir -p obj/client
-mkdir -p obj/server
 source=(
  "src/blib.cpp"
  "src/bengine.cpp"
@@ -24,13 +18,13 @@ source=(
  "src/components/bullet.cpp"
  "src/components/character.cpp"
  "src/components/primitives.cpp"
- "src/components/rotatingtextureddrawable.cpp"
- "src/components/textureddrawable.cpp"
  "src/components/componentlists.cpp"
  "src/components/player.cpp"
  "src/physics/characters.cpp"
  "src/physics/bullets.cpp"
  "src/physics/subroutines.cpp")
+
+codeset=""
 
 if [ "$1" == "server" ] || [ "$1" == "-s" ] || [ "$2" == "server" ]; then
     if [ "$OSTYPE" == "msys" ]; then
@@ -41,7 +35,20 @@ if [ "$1" == "server" ] || [ "$1" == "-s" ] || [ "$2" == "server" ]; then
     source+=('src/bootserver.cpp')
     source+=('src/server/think.cpp')
     source+=('src/server/nethandlers.cpp')
+    codeset=" -DSERVER"
+    mkdir -p srvobj
+    mkdir -p srvobj/physics
+    mkdir -p srvobj/rendering
+    mkdir -p srvobj/components
+    mkdir -p srvobj/client
+    mkdir -p srvobj/server
 else
+    mkdir -p obj
+    mkdir -p obj/physics
+    mkdir -p obj/rendering
+    mkdir -p obj/components
+    mkdir -p obj/client
+    mkdir -p obj/server
     if [ "$OSTYPE" == "msys" ]; then
         executable="benetnasch.exe"
     else
@@ -60,10 +67,16 @@ else
     source+=('src/rendering/drawrotatetextured.cpp')
     source+=('src/rendering/drawscreentext.cpp')
     source+=('src/rendering/drawtextured.cpp')
+    source+=('src/rendering/drawanimatedtextured.cpp')
     source+=('src/rendering/drawspeedometer.cpp')
     source+=('src/rendering/drawtextwindows.cpp')
     source+=('src/rendering.cpp')
     source+=('src/components/textwindow.cpp')
+    source+=('src/components/textureddrawable.cpp')
+    source+=('src/components/animatedtextureddrawable.cpp')
+    source+=('src/components/rotatingtextureddrawable.cpp')
+    source+=('src/samples.cpp')
+    codeset=" -DCLIENT"
 fi
 
 if [ "$OSTYPE" == "msys" ]; then
@@ -125,10 +138,10 @@ else
     fi
 fi
 
+cflags+="$codeset"
 
 #TODO: DETECT
-linker+=' -llua'
-
+linker+=' -llua -L. fauxmix.dll'
 
 cmd="g++ -m32 -march=i686 $cflags"
 
@@ -180,7 +193,11 @@ objects=""
 
 for i in "${source[@]}"
 do
-    obj="`echo $i | sed 's-src/-obj/-g' | sed 's-.cpp-.o-g'`"
+    if [ "$codeset" == " -DSERVER" ]; then
+        obj="`echo $i | sed 's-src/-srvobj/-g' | sed 's-.cpp-.o-g'`"
+    else
+        obj="`echo $i | sed 's-src/-obj/-g' | sed 's-.cpp-.o-g'`"
+    fi
     deps=($(gcc -std=c++11 -MM $i | sed -e 's/^\w*.o://' | tr '\n' ' ' | sed -e 's/\\//g' | sed 's/ \+//' | sed 's/ \+/\n/g'))
     for j in "${deps[@]}"
     do

@@ -14,7 +14,7 @@ void renderTextureInternal( SDL_Texture *tex, SDL_Renderer *renderer, int x, int
 	dst.y = y;
 	dst.w = w;
 	dst.h = h;
-	SDL_RenderCopyEx( renderer, tex, NULL, &dst, 0, NULL, flipx?SDL_FLIP_HORIZONTAL:SDL_FLIP_NONE);
+	SDL_RenderCopyEx( renderer, tex, NULL, &dst, 0, NULL, flipx?SDL_FLIP_HORIZONTAL:SDL_FLIP_NONE );
 }
 void renderTextureInternalEX( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, int w, int h, int sx, int sy, int sw, int sh )
 {
@@ -30,6 +30,21 @@ void renderTextureInternalEX( SDL_Texture *tex, SDL_Renderer *renderer, int x, i
 	src.w = sw;
 	src.h = sh;
 	SDL_RenderCopyEx( renderer, tex, &src, &dst, 0, NULL, SDL_FLIP_NONE );
+}
+void renderTextureInternalEX2( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, int w, int h, int sx, int sy, int sw, int sh, bool flipx )
+{
+	//Setup the destination rectangle to be at the position we want
+	SDL_Rect dst;
+	dst.x = x;
+	dst.y = y;
+	dst.w = w;
+	dst.h = h;
+	SDL_Rect src;
+	src.x = sx;
+	src.y = sy;
+	src.w = sw;
+	src.h = sh;
+	SDL_RenderCopyEx( renderer, tex, &src, &dst, 0, NULL, flipx?SDL_FLIP_HORIZONTAL:SDL_FLIP_NONE );
 }
 
 void renderTextureAngledInternal( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, int w, int h, double angle, double xorigin, double yorigin, bool flipx )
@@ -73,6 +88,11 @@ void renderTexture( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, int 
         if(height == 0) height = h;
 	}
 	renderTextureInternalEX( tex, renderer, x, y, width, height, 0, 0, w, h );
+}
+// cut
+void renderTexture( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, int width, int height, int skipx, bool flipx )
+{
+    renderTextureInternalEX2( tex, renderer, x, y, width, height, skipx, 0, width, height, flipx );
 }
 // rotated
 void renderTexture( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, double scale, double angle, double xorigin, double yorigin, bool flip )

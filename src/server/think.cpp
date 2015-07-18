@@ -17,10 +17,11 @@ namespace Sys
         if((now - lastQuickUpdate)/1000 >= 25) // NOTE: 40 per second
         {
             auto update = SERVERMESSAGE::PLAYERINPUTS;
-            if((now - lastQuickUpdate)/1000 >= 200) // do positions too (5 per second)
+            if(fabs((now - lastQuickUpdate)/1000) >= 200) // do positions too (5 per second)
+            {
                 update = SERVERMESSAGE::PLAYERPOSITIONS;
-            
-            lastQuickUpdate = now; // TODO: Make more accurate (would currently result in a lower-than-intended update rate)
+                lastQuickUpdate = now; // TODO: Make more accurate (would currently result in a lower-than-intended update rate)
+            }
             double theresponse = buffer_create();
             for ( unsigned i = 0; i < Sys::PlayerList::Slots.size(); ++i )
             {
@@ -33,8 +34,8 @@ namespace Sys
                     {
                         write_ushort(theresponse, character->position->x*10);
                         write_ushort(theresponse, character->position->y*10);
-                        write_byte(theresponse, character->hspeed*5);
-                        write_byte(theresponse, character->vspeed*5);
+                        write_short(theresponse, character->hspeed*4);
+                        write_short(theresponse, character->vspeed*4);
                     }
                     write_ushort(theresponse, player->input.netkeys); // key
                     write_ushort(theresponse, player->input.netaimdir); // angle

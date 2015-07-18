@@ -16,15 +16,17 @@ namespace Sys
         Hull * head;
         Hull * body;
         // TODO: Separate somehow to remove "gameponents" dependency on "drawingcomponents"
-        TexturedDrawable * sprite;
-        RotatingTexturedDrawable * weaponsprite;
-        const char * image_stand = "sprites/stand.png";
-        const char * image_jump = "sprites/jump.png";
-        const char * image_run = "sprites/run.png";
-        const char * image_leanF = "sprites/leanF.png";
-        const char * image_leanB = "sprites/leanB.png";
-        const char * image_weapon = "sprites/gun.png";
-        
+        #ifdef CLIENT
+            TexturedDrawable * stand;
+            AnimatedTexturedDrawable * run;
+            RotatingTexturedDrawable * weaponsprite;
+            const char * image_stand = "sprites/stand.png";
+            const char * image_jump = "sprites/jump.png";
+            const char * image_run = "sprites/run.png";
+            const char * image_leanF = "sprites/leanF.png";
+            const char * image_leanB = "sprites/leanB.png";
+            const char * image_weapon = "sprites/gun.png";
+        #endif
         double hspeed, vspeed;
         bool myself;
         

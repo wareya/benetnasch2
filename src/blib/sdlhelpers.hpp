@@ -18,6 +18,8 @@ void renderTexture( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, doub
 void renderTexture( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y );
 // stretched
 void renderTexture( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, int width, int height, bool _unused );
+// cut
+void renderTexture( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, int width, int height, int skipx, bool flipx );
 // rotated
 void renderTexture( SDL_Texture *tex, SDL_Renderer *renderer, int x, int y, double scale, double angle, double xorigin, double yorigin, bool flip );
 

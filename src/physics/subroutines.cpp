@@ -60,7 +60,7 @@ namespace Sys
         /* move_contact */
         // moves our character to contact with a wall chunk (sends character backwards in cases of already overlapping)
         // returns square distance traveled
-        // algorithm reference image: http://i.imgur.com/tq1rulr.png
+        // algorithm reference image: http://i.imgur.com/f5XdLtD.png
         // TODO: make non-character-specific
         std::tuple<float, float> move_contact (Character * character, double hvec, double vvec)
         {

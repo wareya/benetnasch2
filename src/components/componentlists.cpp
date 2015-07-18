@@ -7,6 +7,7 @@ namespace Sys
     Collection<Bullet> Bullets;
     Collection<BoxDrawable> BoxDrawables;
     Collection<TexturedDrawable> TexturedDrawables;
+    Collection<AnimatedTexturedDrawable> AnimatedTexturedDrawables;
     Collection<RotatingTexturedDrawable> RotatingTexturedDrawables;
     Collection<BackgroundDrawable> BackgroundDrawables;
     Collection<Position> Positions;

@@ -16,6 +16,7 @@ namespace Sys
         TexturedDrawable(entityid_t myEntity, double argx, double argy, double argxoffset, double argyoffset);
         TexturedDrawable(entityid_t myEntity, double argx, double argy, double argxoffset, double argyoffset, char noaddifdefined);
         ~TexturedDrawable();
+        bool visible = true;
         Position * position;
         SDL_Texture * sprite;
         double xoffset, yoffset;
@@ -33,6 +34,16 @@ namespace Sys
         double angle, xorigin, yorigin;
     };
     extern Collection<RotatingTexturedDrawable> RotatingTexturedDrawables;
+    
+    struct AnimatedTexturedDrawable : public TexturedDrawable
+    {
+        // application: frame size, number of frames, progress/index
+        AnimatedTexturedDrawable(entityid_t myEntity, double argx, double argy, double argxoffset, double argyoffset, int length, double width, double height);
+        ~AnimatedTexturedDrawable();
+        int length;
+        double index, width, height;
+    };
+    extern Collection<AnimatedTexturedDrawable> AnimatedTexturedDrawables;
     
     // background component
     struct BackgroundDrawable : public Component

@@ -78,7 +78,6 @@ namespace Sys
             #ifdef B_NET_DEBUG_PRINTPACK
                 std::cout << "p pix: " << pix << " out of " << Sys::PlayerList::Slots.size() << "\n";
             #endif
-            puts("GOT POSITIONS");
             if(serverplayer)
             {
                 auto input = &serverplayer->player->input;
@@ -87,8 +86,8 @@ namespace Sys
                 {
                     character->position->x = read_ushort(buffer)/10;
                     character->position->y = read_ushort(buffer)/10;
-                    character->hspeed = read_byte(buffer)/5;
-                    character->vspeed = read_byte(buffer)/5;
+                    character->hspeed = read_short(buffer)/4;
+                    character->vspeed = read_short(buffer)/4;
                     input->setInputsAsBitfield( read_ushort(buffer) );
                     input->aimDirection = read_ushort(buffer)*360.0/0x10000;
                     input->aimDistance = read_ubyte(buffer)*2;

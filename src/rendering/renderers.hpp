@@ -6,6 +6,7 @@ namespace Sys
     namespace Renderers
     {
         bool DrawTextured(float x, float y);
+        bool DrawAnimatedTextured(float x, float y);
         bool DrawRotateTextured(float x, float y);
         bool DrawCharacterDebug(float x, float y);
         bool DrawBackground(float x, float y);
