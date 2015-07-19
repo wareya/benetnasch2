@@ -30,6 +30,8 @@ namespace Sys
             
             delete weaponsprite->position;
             weaponsprite->position = position;
+            
+            gun_emitter = fauxmix_emitter_create(sample::shot);
         #endif
         
         puts("making a character");

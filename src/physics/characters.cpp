@@ -3,6 +3,10 @@
 #include "../components/player.hpp"
 #include <vector>
 
+#ifdef CLIENT
+#include "../samples.hpp"
+#endif
+
 namespace Sys
 {
     namespace Physicsers
@@ -63,6 +67,9 @@ namespace Sys
                         auto shotspeed = 800;
                         
                         new Bullet(Ent::New(), character->center_x(), character->center_y(), cos(dir) * shotspeed + hspeed, -sin(dir) * shotspeed, 1);
+                        #ifdef CLIENT
+                            fauxmix_emitter_fire(character->gun_emitter);
+                        #endif
                     }
                     
                     int whichrunspeed;

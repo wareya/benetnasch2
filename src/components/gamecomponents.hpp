@@ -4,6 +4,10 @@
 #include "../components.hpp"
 #include "drawingcomponents.hpp"
 
+#ifdef CLIENT
+#include "../samples.hpp"
+#endif
+
 namespace Sys
 {
     // Character component
@@ -17,6 +21,7 @@ namespace Sys
         Hull * body;
         // TODO: Separate somehow to remove "gameponents" dependency on "drawingcomponents"
         #ifdef CLIENT
+            id gun_emitter;
             TexturedDrawable * stand;
             AnimatedTexturedDrawable * run;
             RotatingTexturedDrawable * weaponsprite;
