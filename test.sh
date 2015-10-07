@@ -141,9 +141,14 @@ fi
 cflags+="$codeset"
 
 #TODO: DETECT
-linker+=' -llua -L. fauxmix.dll'
+linker+=' -llua -Wl,-R. -L. '
+if [ "$OSTYPE" == "msys" ]; then
+    linker+='fauxmix.dll'
+else
+    linker+='fauxmix.so'
+fi
 
-cmd="g++ -m32 -march=i686 $cflags"
+cmd="g++ $cflags"
 
 if [ $OSTYPE == "msys" ]; then
     console="-mconsole"
@@ -210,6 +215,6 @@ do
     objects="$objects $obj"
 done
 echo "g++ -o $executable $objects $linker"
-g++ -m32 -o $executable $objects $linker
+g++ -o $executable $objects $linker
 
 echo "done"

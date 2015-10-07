@@ -1,0 +1,5 @@
+- Make people trade blows and/or exploit timing to play defensively
+- Combat shall work properly in a vacuum
+- Situational unbalance should bounce back and forth between players
+- Map design should bring out interesting situational unbalance phenomena, not /change/ the balance
+- Focus on projectiles and movement gimmicks
