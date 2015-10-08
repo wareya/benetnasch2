@@ -43,7 +43,7 @@ namespace Sys
     bool FrameLimit()
     {
         // Frame limit
-        double TimeWaitS;
+        double TimeWaitms;
         double TimeSpent;
         double prehalttime = Time::get_us(); // naively avoid error in non-critical debug code
         double halttime;
@@ -63,23 +63,24 @@ namespace Sys
             TimeSpent = Time::get_us() - Time::simstart_us;
             // calculate desired amount to wait
         	#ifdef B_FRAMELIMIT_CHEAP
-           	TimeWaitS = 1000.0 / Time::Framerate;
+           	TimeWaitms = Time::Frametime;
             #else
-            TimeWaitS = maximum(0.0, (1000.0 / Time::Framerate) - TimeSpent/1000.0 - Time::deviance);
+            TimeWaitms = maximum(0.0, Time::Frametime - TimeSpent/1000.0 - Time::deviance);
             #endif
             // store time for delay deviance check
             prehalttime = Time::get_us();
             
         	#ifndef B_FRAMELIMIT_DISABLE
-	        SDL_Delay(round(TimeWaitS));
+	        SDL_Delay(round(TimeWaitms));
 	        #endif
             
             // measure current time directly after frame limit delay
             halttime = Time::get_us();
             
-            Time::error = (halttime - prehalttime)/1000.0 - round(TimeWaitS);
+            Time::error = (halttime - prehalttime)/1000.0 - round(TimeWaitms);
             // calculate amount of time that halt was inaccurate by and store it for the next iteration to compensate for
-            Time::deviance = (halttime - prehalttime)/1000.0 - TimeWaitS;
+            Time::deviance = (halttime - prehalttime)/1000.0 - TimeWaitms;
+            // allow framelimiter to make up for single frames of poor performance
             
             // incrememt tick count
             Time::ticks = fmod(Time::ticks + 1.0, Time::Framerate);
@@ -87,15 +88,17 @@ namespace Sys
         // push timings to buffer
         Time::last_us = Time::simstart_us;
         Time::simstart_us = halttime;
-        Time::delta_us = Time::simstart_us - Time::last_us;
+        Time::frames.push_front( Time::simstart_us );
+        Time::delta_us = ( (Time::frames[0] - Time::frames[1])
+                         + (Time::frames[1] - Time::frames[2]) 
+                         )/2;
         Time::delta = Time::delta_us / Time::scale;
-        Time::frames.push_back( Time::simstart_us );
         Time::sim = TimeSpent;
         Time::halt = halttime-prehalttime;
         
         // Throw away old timings
         while (Time::frames.size() > 125)
-            Time::frames.erase( Time::frames.begin() );
+            Time::frames.erase( Time::frames.end() );
         
         return false;
     }

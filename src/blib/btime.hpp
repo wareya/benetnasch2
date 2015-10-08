@@ -2,27 +2,23 @@
 #define INCLUDED_BTIME
 
 #include <chrono>
-#include <vector>
+#include <deque>
 
 namespace Time
 {
     extern bool dostart;
     
-    #ifdef B_FRAMERATE
-    const double Framerate = B_FRAMERATE;
-    #else
-    const double Framerate = 250;
-    #endif
+    extern const double Framerate;
     
-    const double Framesnum = Framerate;
-    const double Frametime = 1000/Framerate;
+    extern const double Framesnum;
+    extern const double Frametime;
     extern double ticks;
     
     extern std::chrono::time_point<std::chrono::high_resolution_clock> start;
     extern std::chrono::time_point<std::chrono::high_resolution_clock> end;
     extern double scale;
     extern double last_us, simstart_us, delta_us, delta, deviance, error, sim, halt;
-    extern std::vector<double> frames;
+    extern std::deque<double> frames;
     
     double get_us();
 }

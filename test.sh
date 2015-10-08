@@ -148,7 +148,7 @@ else
     linker+='fauxmix.so'
 fi
 
-cmd="g++ $cflags"
+cmd="g++ -fPIC $cflags"
 
 if [ $OSTYPE == "msys" ]; then
     console="-mconsole"
@@ -167,6 +167,7 @@ aflags='-O3 -msse -msse2 -msse2avx' # aggressive amd x86 optimizations
 tflags='-D TESTS=1'
 pflags='-O3 -D B_FRAMELIMIT_DISABLE -D B_DEBUG_FRAMESONLY -D B_DEBUG_COREFRAMES '
 zflags='-O3 -D B_FRAMELIMIT_DISABLE -D B_DEBUG_NORENDER '
+wflags='-O3 -D B_FRAMELIMIT_DISABLE'
 
 if [ "$1" == "-d" ]; then
     cmd="$cmd $dflags"
@@ -188,6 +189,8 @@ elif [ "$1" == "-t" ]; then
     cmd="$cmd $tflags"
 elif [ "$1" == "-z" ]; then
     cmd="$cmd $zflags"
+elif [ "$1" == "-w" ]; then
+    cmd="$cmd $wflags"
 elif [ "$1" == "-s" ]; then
     cmd="$cmd ${@:2}";
 elif [ "$1" == "-c" ]; then

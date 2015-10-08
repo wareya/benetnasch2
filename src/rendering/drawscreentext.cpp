@@ -14,7 +14,7 @@ namespace Sys
             TemporaryOffscreenRenderMode Gimme(Sys::Renderer);
             
             renderText(0, 0,
-                       (std::string("FPS:  ")+std::to_string(Time::scale / ((Time::frames.back() - Time::frames.front())/(Time::frames.size()-1)))).data(),
+                       (std::string("FPS:  ")+std::to_string(Time::scale / ((Time::frames.front() -Time::frames.back())/(Time::frames.size()-1)))).data(),
                        Sys::afont);
             #ifndef B_DEBUG_FRAMESONLY
             renderText(0, 13*1,

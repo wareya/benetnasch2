@@ -1,11 +1,12 @@
 #define USE_SOURCE_HEADER_BTIME
 
-#include <chrono>
-#include <vector>
+#include "btime.hpp"
 
 namespace Time
 {
     bool dostart = true;
+    
+    double ticks = 0;
     
     #ifdef B_FRAMERATE
     const double Framerate = B_FRAMERATE;
@@ -16,14 +17,12 @@ namespace Time
     const double Framesnum = Framerate;
     const double Frametime = 1000/Framerate;
     
-    double ticks = 0;
-    
     std::chrono::time_point<std::chrono::high_resolution_clock> start = std::chrono::high_resolution_clock::now();
     std::chrono::time_point<std::chrono::high_resolution_clock> end = std::chrono::high_resolution_clock::now();
     double scale = double(std::chrono::microseconds::period().den) / double(std::chrono::microseconds::period().num);
     
-    double last_us, simstart_us, delta_us, delta, deviance, error, sim, halt;
-    std::vector<double> frames;
+    double last_us, simstart_us, delta_us, delta, deviance, excessdeviance, error, sim, halt;
+    std::deque<double> frames;
     
     std::chrono::high_resolution_clock clock;
     double get_us()
