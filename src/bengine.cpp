@@ -71,16 +71,19 @@ namespace Sys
             prehalttime = Time::get_us();
             
         	#ifndef B_FRAMELIMIT_DISABLE
-	        SDL_Delay(round(TimeWaitms));
+            SDL_Delay(round(TimeWaitms));
 	        #endif
             
             // measure current time directly after frame limit delay
             halttime = Time::get_us();
             
             Time::error = (halttime - prehalttime)/1000.0 - round(TimeWaitms);
-            // calculate amount of time that halt was inaccurate by and store it for the next iteration to compensate for
+            // calculate amount of time that halt was inaccurate by
+            // and store it in order to to compensate for it in the next iteration
             Time::deviance = (halttime - prehalttime)/1000.0 - TimeWaitms;
             // allow framelimiter to make up for single frames of poor performance
+            if(TimeSpent/1000.0 > Time::Frametime)
+                Time::deviance += TimeSpent/1000.0 - Time::Frametime;
             
             // incrememt tick count
             Time::ticks = fmod(Time::ticks + 1.0, Time::Framerate);
@@ -95,9 +98,10 @@ namespace Sys
         Time::delta = Time::delta_us / Time::scale;
         Time::sim = TimeSpent;
         Time::halt = halttime-prehalttime;
+        Time::asked = round(TimeWaitms);
         
         // Throw away old timings
-        while (Time::frames.size() > 125)
+        while (Time::frames.size() > 50)
             Time::frames.erase( Time::frames.end() );
         
         return false;

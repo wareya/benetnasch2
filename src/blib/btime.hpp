@@ -17,7 +17,7 @@ namespace Time
     extern std::chrono::time_point<std::chrono::high_resolution_clock> start;
     extern std::chrono::time_point<std::chrono::high_resolution_clock> end;
     extern double scale;
-    extern double last_us, simstart_us, delta_us, delta, deviance, error, sim, halt;
+    extern double last_us, simstart_us, delta_us, delta, deviance, error, sim, halt, asked;
     extern std::deque<double> frames;
     
     double get_us();

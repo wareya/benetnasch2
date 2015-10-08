@@ -21,15 +21,18 @@ namespace Sys
                        (std::string("Sim:  ")+std::to_string(Time::sim / 1000)).data(),
                        Sys::afont);
             renderText(0, 13*2,
-                       (std::string("Halt: ")+std::to_string(Time::halt / 1000)).data(),
+                       (std::string("Asked:")+std::to_string(Time::asked)).data(),
                        Sys::afont);
             renderText(0, 13*3,
-                       (std::string("Dev:  ")+std::to_string(Time::deviance)).data(),
+                       (std::string("Halt: ")+std::to_string(Time::halt / 1000)).data(),
                        Sys::afont);
             renderText(0, 13*4,
-                       (std::string("Chunks:")+std::to_string(Sys::BoxDrawables.List.size())).data(),
+                       (std::string("Dev:  ")+std::to_string(Time::deviance)).data(),
                        Sys::afont);
             renderText(0, 13*5,
+                       (std::string("Chunks:")+std::to_string(Sys::BoxDrawables.List.size())).data(),
+                       Sys::afont);
+            renderText(0, 13*6,
                        (std::string("Bullets:")+std::to_string(Sys::Bullets.List.size())).data(),
                        Sys::afont);
             for(auto c : Sys::Characters)
