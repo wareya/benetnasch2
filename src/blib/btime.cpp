@@ -11,7 +11,7 @@ namespace Time
     #ifdef B_FRAMERATE
     const double Framerate = B_FRAMERATE;
     #else
-    const double Framerate = 200;
+    const double Framerate = 250;
     #endif
     
     const double Framesnum = Framerate;
