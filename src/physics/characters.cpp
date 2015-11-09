@@ -8,31 +8,8 @@
 #endif
 
 static const float basegravity = 720;
-
-struct movedata
-{
-    double hspeed, vspeed;
-    void operator+=(movedata k)
-    {
-        hspeed += k.hspeed;
-        vspeed += k.vspeed;
-    }
-    void operator-=(movedata k)
-    {
-        hspeed -= k.hspeed;
-        vspeed -= k.vspeed;
-    }
-    void  operator*=(float f)
-    {
-        hspeed *= f;
-        vspeed *= f;
-    }
-    void  operator/=(float f)
-    {
-        hspeed /= f;
-        vspeed /= f;
-    }
-};
+static const float max_gravity = 2000;
+static const float maxspeed = 300;
 
 
 namespace Sys
@@ -41,7 +18,7 @@ namespace Sys
     {
         // Benetnasch predicts movement and rescales it based on the actual time taken
         // in order to compromise on the advantages of both delta time and interpolated timestep.
-        movedata given_movement(movedata mine, Input::PlayerInput input, Sys::Character * character, float delta)
+        float given_movement(double hspeed, Input::PlayerInput input, Sys::Character * character, float delta, int * info)
         {
             /* Due to REASONS, Benetnasch isn't using the typical += accel *= friction method of handling walking speed.
              * Instead, we're going to "manually" model struggle as we approach the desired max speed.
@@ -52,12 +29,6 @@ namespace Sys
             float struggleslow = 0.2f; // struggle reaches 0.2 at low end
             float strugglehard = 0.15f; // struggle reaches 0.15 at high end
             float strugglepoint = 0.25f; // The point on the acceleration curve with the LEAST struggle
-            float maxspeed = 300;
-            float gravity = basegravity*delta;
-            float max_gravity = 2000;
-            
-            double hspeed = mine.hspeed;
-            double vspeed = mine.vspeed;
             
             int direction = (input.inputs[Input::RIGHT] - input.inputs[Input::LEFT]);
             
@@ -104,8 +75,8 @@ namespace Sys
                     //fraction /= 1.0f-strugglemodel;
                     
                     speed += baseaccel*fraction;
-                    if(speed > maxspeed)
-                        speed = maxspeed;
+                    #define INFO_CHECKFAST (1<<0)
+                    *info |= INFO_CHECKFAST;
                     hspeed = direction * speed;
                 }
                 else
@@ -115,8 +86,8 @@ namespace Sys
                     // However, it still needs to be here (rather than non-direction_agreement)
                     // in order to gracefully go to maxspeed.
                     speed -= deaccel;
-                    if(speed < maxspeed)
-                        speed = maxspeed;
+                    #define INFO_CHECKSLOW (1<<1)
+                    *info |= INFO_CHECKSLOW;
                     hspeed = sign(hspeed) * speed;
                 }
             }
@@ -137,20 +108,13 @@ namespace Sys
                     apply *= fraction;
                 }
                 
+                #define INFO_CHECKREVERSE (1<<2)
                 if(fabs(hspeed) < deaccel and direction == 0)
-                    hspeed = 0;
-                else
-                    hspeed -= sign(hspeed)*apply;
+                    *info |= INFO_CHECKREVERSE;
+                hspeed -= sign(hspeed)*apply;
             }
             
-            if(!place_meeting(character, 0, crop1(gravity)))
-            {
-                vspeed += gravity;
-                if(vspeed > max_gravity)
-                    vspeed = max_gravity;
-            }
-            
-            return movedata({hspeed, vspeed});
+            return hspeed;
         }
         
         
@@ -188,28 +152,102 @@ namespace Sys
                         #endif
                     }
                     
-                    movedata temp = {hspeed, vspeed};
                     float virtual_delta = 1.0/60;
-                    auto tossed = given_movement(temp, input, character, virtual_delta);
-                    tossed -= temp;
-                    tossed /= virtual_delta;
-                    tossed *= delta;
-                    tossed += temp;
+                    int info = 0;
+                    float temp = given_movement(hspeed, input, character, virtual_delta, &info);
+                    temp -= hspeed;
+                    temp /= virtual_delta;
+                    temp *= delta;
+                    temp += hspeed;
                     
-                    hspeed = tossed.hspeed;
-                    vspeed = tossed.vspeed;
+                    int oldhsign = sign(hspeed);
+                    
+                    hspeed = temp;
+                    
+                    if(info & INFO_CHECKFAST)
+                    {
+                        if(abs(hspeed) > maxspeed)
+                            hspeed = oldhsign * maxspeed;
+                    }
+                    if(info & INFO_CHECKSLOW)
+                    {
+                        if(abs(hspeed) < maxspeed)
+                            hspeed = oldhsign * maxspeed;
+                    }
+                    if(info & INFO_CHECKREVERSE)
+                    {
+                        if(sign(hspeed) != oldhsign)
+                            hspeed = 0;
+                    }
+                    
+                    // Getting jump arcs to match 100% accurately is VERY HARD. So I handle the math manually,
+                    // instead of relying on the short-circuited interp function.
+                    float jumpspeed = -300;
                     
                     // Because http://i.imgur.com/MAhxJu6.png
-                    float applied_gravity = basegravity*Time::Frametime/1000;
-                    // Behavior: Supposing a given jump consists of only the frames "on the ground", "at the apex", and "on the ground"
-                    //              it will have double the length of arc that a "perfectly accurate" jump has.
-                    // Such a jump has a per-frame gravity equal to double the jumpspeed.
-                    // We're going to correct all jumps to look like this "perfectly accurate" jump.
-                    // To do this, we pre-apply half of a real frame of gravity.
-                    // We do it based on desired frametime instead of actual delta, because.... Sorry. It's literally impossible to do any better.
-                    // TODO: Correct for this in GRAVITY instead! SERIOUSLY! (How? -> Get help!) That's where this belongs!
-                    //   Scratch notes: If done in gravity, gravity would either decrease towards high framerates, or increase towards low framerates. Mull.
-                    float jumpspeed = (-300) + (applied_gravity/2);
+                    // Assume zero delta as 1x gravity.
+                    // Look at the right graph.
+                    // When zero delta time, the arc will end at x=4, y=0.
+                    // With dt = 1, arc ends at x=5
+                    // dt = 2, arc ends at x=6,
+                    // dt = 4. arc ends at x=8
+                    // There will be some delta time where double gravity is appropriate.
+                    // This is the delta time where, without the adjustment, the arc will end at 2x the distance.
+                    // In this picture, that arc is the black arc.
+                    // The left graph is a hypothetical "perfect" arc. Gravity here is actually cut in half relative to the above description.
+                    // 
+                    // The delta time where "the arc ends at 2x the distance" of the perfect arc, depends on the gravity and initial jump speed.
+                    // Indeed, it's the delta time where gravity per frame is 2x the jumping velocity.
+                    // Gravity per frame is basegravity*delta
+                    // basegravity*delta == 2*jumpspeed -> gravity *= 2
+                    // delta == 2*jumpspeed/basegravity -> gravity *= 2
+                    //
+                    // The following must also be assumed to be true.
+                    // basegravity*delta == 0 -> gravity *= 1
+                    //
+                    // So it's obvious that [*= basegravity*delta/jumpspeed] can't be what we want; a delta of 0 would be *= 0.
+                    // 
+                    // It turns out, the value of delta is effectively a factor for how much extra gravity to add.
+                    // To make the purple arc hit x=4 y=0, you need to add two to it by that point, or two across four times, or 0.5.
+                    // To make the red arc hit x=4 7=0, you need to add four to it by that point, across two times, or 2.
+                    // This is misleading: it appears to be growing quadratically, but it is not. If you count "four times" for that same period of time, it's 1.
+                    // dt 1: 0.5 for intervals of 1
+                    // dt 2: 2 for intervals of 2
+                    // dt 4: 8 for intervals of 4
+                    // 1 -> 0.5
+                    // 2 -> 1
+                    // 3 -> ???
+                    // 4 -> 2
+                    // 3 is 1.5, of course.
+                    //
+                    // The above values are relative to the grid lines in the picture.
+                    // Let's look back on the "quadratically growing" thing.
+                    // 1 -> 0.5
+                    // 2 -> 2
+                    // 3 -> ????
+                    // 4 -> 8
+                    //
+                    // These are in terms of "per frame".
+                    // Now, what does {delta = 2*jumpspeed/gravity} from earlier give us?
+                    // With our numbers: ~0.833 seconds.
+                    // At an infinitely high framerate, the jump would take 0.833 seconds to land.
+                    // At 1.2fps, the jump would take twice that time to land.
+                    // Let's just break that.
+                    // 
+                    // Let's review: *1 is when delta = 0, *2 is when delta is... a particular calculable value.
+                    // And the "per frame" value grows proportionally to the frame time, just like gravity.
+                    // We're effectively dealing with framegravity = deltagravity + f(delta, deltagravity), where "f" is basically just multiplication.
+                    // "f" would return 0 for d=0, and 1 for d=[particular calculable value]
+                    float gravity = basegravity*delta;
+                    float gapdelta = fabs(2*jumpspeed/gravity);
+                    gravity += delta/gapdelta*gravity;
+                    
+                    if(!place_meeting(character, 0, crop1(gravity)))
+                    {
+                        vspeed += gravity;
+                        if(vspeed > max_gravity)
+                            vspeed = max_gravity;
+                    }
                     
                     int jumping = (input.inputs[Input::JUMP] & !input.last_inputs[Input::JUMP]);
                             
