@@ -7,6 +7,8 @@
 #include "../samples.hpp"
 #endif
 
+static const float basegravity = 720;
+
 struct movedata
 {
     double hspeed, vspeed;
@@ -51,7 +53,7 @@ namespace Sys
             float strugglehard = 0.15f; // struggle reaches 0.15 at high end
             float strugglepoint = 0.25f; // The point on the acceleration curve with the LEAST struggle
             float maxspeed = 300;
-            float gravity = 720*delta;
+            float gravity = basegravity*delta;
             float max_gravity = 2000;
             
             double hspeed = mine.hspeed;
@@ -197,7 +199,18 @@ namespace Sys
                     hspeed = tossed.hspeed;
                     vspeed = tossed.vspeed;
                     
-                    float jumpspeed = -300;
+                    // Because http://i.imgur.com/MAhxJu6.png
+                    float applied_gravity = basegravity*Time::Frametime/1000;
+                    // Behavior: Supposing a given jump consists of only the frames "on the ground", "at the apex", and "on the ground"
+                    //              it will have double the length of arc that a "perfectly accurate" jump has.
+                    // Such a jump has a per-frame gravity equal to double the jumpspeed.
+                    // We're going to correct all jumps to look like this "perfectly accurate" jump.
+                    // To do this, we pre-apply half of a real frame of gravity.
+                    // We do it based on desired frametime instead of actual delta, because.... Sorry. It's literally impossible to do any better.
+                    // TODO: Correct for this in GRAVITY instead! SERIOUSLY! (How? -> Get help!) That's where this belongs!
+                    //   Scratch notes: If done in gravity, gravity would either decrease towards high framerates, or increase towards low framerates. Mull.
+                    float jumpspeed = (-300) + (applied_gravity/2);
+                    
                     int jumping = (input.inputs[Input::JUMP] & !input.last_inputs[Input::JUMP]);
                             
                     if(jumping)
