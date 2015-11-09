@@ -7,10 +7,151 @@
 #include "../samples.hpp"
 #endif
 
+struct movedata
+{
+    double hspeed, vspeed;
+    void operator+=(movedata k)
+    {
+        hspeed += k.hspeed;
+        vspeed += k.vspeed;
+    }
+    void operator-=(movedata k)
+    {
+        hspeed -= k.hspeed;
+        vspeed -= k.vspeed;
+    }
+    void  operator*=(float f)
+    {
+        hspeed *= f;
+        vspeed *= f;
+    }
+    void  operator/=(float f)
+    {
+        hspeed /= f;
+        vspeed /= f;
+    }
+};
+
+
 namespace Sys
 {
     namespace Physicsers
     {
+        // Benetnasch predicts movement and rescales it based on the actual time taken
+        // in order to compromise on the advantages of both delta time and interpolated timestep.
+        movedata given_movement(movedata mine, Input::PlayerInput input, Sys::Character * character, float delta)
+        {
+            /* Due to REASONS, Benetnasch isn't using the typical += accel *= friction method of handling walking speed.
+             * Instead, we're going to "manually" model struggle as we approach the desired max speed.
+             */
+            // our values
+            float baseaccel = 1000*delta;
+            float deaccel = 1300*delta;
+            float struggleslow = 0.2f; // struggle reaches 0.2 at low end
+            float strugglehard = 0.15f; // struggle reaches 0.15 at high end
+            float strugglepoint = 0.25f; // The point on the acceleration curve with the LEAST struggle
+            float maxspeed = 300;
+            float gravity = 720*delta;
+            float max_gravity = 2000;
+            
+            double hspeed = mine.hspeed;
+            double vspeed = mine.vspeed;
+            
+            int direction = (input.inputs[Input::RIGHT] - input.inputs[Input::LEFT]);
+            
+            // whether we're accelerating in the same direction we're moving
+            // (with "not" for not controlling)
+            int direction_agreement = (sign(direction) == sign(hspeed) and direction) != 0 ? 1 : -1;
+            // with "yes" for not moving, yet controlling
+            if (hspeed == 0 and direction) direction_agreement = 1;
+            
+            if(direction_agreement == 1)
+            {
+                float speed = fabs(hspeed);
+                // We need to get how close we are to the max speed to model struggle
+                float fraction = speed/maxspeed;
+                bool started_lesser = (fraction < 1.0f);
+                
+                //hspeed += direction * baseaccel;
+                
+                
+                if(started_lesser)
+                {
+                    // Transform how close we are to the max speed, into the modifier
+                    if (fraction < strugglepoint)
+                    {
+                        fraction /= strugglepoint; // gradient 0 ~ 1
+                        
+                        fraction *= 1.0f-struggleslow; // gradient ex. 0 ~ 0.8
+                        fraction += struggleslow; // gradient ex. 0.2 ~ 1
+                    }
+                    else
+                    {
+                        fraction -= strugglepoint; // gradient ex. 0.75 ~ 0
+                        fraction /= 1.0f-strugglepoint; //gradient ex. 1.0 ~ 0
+                        fraction *= -1; // gradient ex. -1.0 ~ 0
+                        fraction += 1; // gradient ex. 0 ~ 1.0
+                        
+                        fraction *= fraction; // curve down
+                        
+                        fraction *= 1.0f-strugglehard; // gradient ex. 0 ~ 0.85
+                        fraction += strugglehard; // gradient ex. 0.15 ~ 1
+                        
+                    }
+                    
+                    //fraction /= 1.0f-strugglemodel;
+                    
+                    speed += baseaccel*fraction;
+                    if(speed > maxspeed)
+                        speed = maxspeed;
+                    hspeed = direction * speed;
+                }
+                else
+                {   // if we're agreeing with our movement, but STARTED going too fast,
+                    // we need to use a completely different model in order to
+                    // agree with the non-direction_agreement case.
+                    // However, it still needs to be here (rather than non-direction_agreement)
+                    // in order to gracefully go to maxspeed.
+                    speed -= deaccel;
+                    if(speed < maxspeed)
+                        speed = maxspeed;
+                    hspeed = sign(hspeed) * speed;
+                }
+            }
+            else // non-direction_agreement case
+            {
+                float speed = fabs(hspeed);
+                
+                float apply = deaccel;
+                if(direction == 0)
+                {   // Model struggle of approaching zero speed (rather than continuing to counter-accelerate) if we're not controlling
+                    float fraction = speed/maxspeed;
+                    if(fraction > 1.0)
+                        fraction = 1.0;
+                    
+                    fraction *= 1.0f-struggleslow; // gradient ex. 0 ~ 0.8
+                    fraction += struggleslow; // gradient ex. 0.2 ~ 1
+                    
+                    apply *= fraction;
+                }
+                
+                if(fabs(hspeed) < deaccel and direction == 0)
+                    hspeed = 0;
+                else
+                    hspeed -= sign(hspeed)*apply;
+            }
+            
+            if(!place_meeting(character, 0, crop1(gravity)))
+            {
+                vspeed += gravity;
+                if(vspeed > max_gravity)
+                    vspeed = max_gravity;
+            }
+            
+            return movedata({hspeed, vspeed});
+        }
+        
+        
         bool MoveCharacters()
         {
             if(!Physicsers::delta_is_too_damn_low)
@@ -28,36 +169,9 @@ namespace Sys
                     double &hspeed = character->hspeed;
                     double &vspeed = character->vspeed;
                     
-                    
-                    int stepsize = 4;
-                    
-                    /*
-                     *  handle accelerations
-                     */
-                    float accel = 1000*delta;
-                    float aaccel = 1000*delta;
-                    float gravity = 720*delta;
-                    float max_gravity = 2000;
-                    float jumpspeed = -300;
-                    float fric_overmoving = pow(0.4, delta);
-                    float fric_moving = pow(0.2, delta);
-                    float fric_counter = pow(0.01, delta);
-                    float fric_still = pow(0.025, delta);
-                    float fric_sticky = 100*delta;
-                    float fric_air = pow(0.15, delta);
-                    float fric_air_threshhold = 400;
-                    int crawlspeed = 75;
-                    int walkspeed = 170;
-                    int runspeed = 240;
-                    int airrunspeed = 260;
-                    float struggle1 = 0.65;
-                    float struggle2 = 0.5;
-                    
-                    auto & input = player->input;
-                    int direction = (input.inputs[Input::RIGHT] - input.inputs[Input::LEFT]);
-                    int jumping = (input.inputs[Input::JUMP] & !input.last_inputs[Input::JUMP]);
-                    
                     // update weapon things
+                    Input::PlayerInput & input = player->input;
+                    
                     auto rawangle = input.aimDirection;
                     auto dir = deg2rad(rawangle);
                     
@@ -72,94 +186,24 @@ namespace Sys
                         #endif
                     }
                     
-                    int whichrunspeed;
-                    int taccel;
-                    if(!place_meeting(character, 0, crop1(gravity))) // in air
-                    {
-                        taccel = aaccel;
-                        whichrunspeed = airrunspeed;
-                    }
-                    else
-                    {
-                        taccel = accel;
-                        whichrunspeed = runspeed;
-                    }
-                    // If we're moving too slowly, our acceleration should be dampened
-                    if (direction == int(sign(hspeed)) or hspeed == 0)
-                    {
-                        if (abs(hspeed) >= walkspeed)
-                            taccel *= struggle2;
-                        else if (abs(hspeed) >= crawlspeed)
-                            ;
-                        else
-                        {
-                            float factor =
-                              (float(abs(hspeed)) - crawlspeed)
-                              / walkspeed;
-                            taccel *= lerp(struggle1, 1.0f, factor);
-                        }
-                    }
+                    movedata temp = {hspeed, vspeed};
+                    float virtual_delta = 1.0/60;
+                    auto tossed = given_movement(temp, input, character, virtual_delta);
+                    tossed -= temp;
+                    tossed /= virtual_delta;
+                    tossed *= delta;
+                    tossed += temp;
                     
-                    // calculate post-control speed
+                    hspeed = tossed.hspeed;
+                    vspeed = tossed.vspeed;
                     
-                    auto hsign = (0 < hspeed) - (hspeed < 0);
-                    
-                    auto started_in_excess = abs(hspeed) > whichrunspeed and direction == hsign;
-                    
-                    if(!started_in_excess)
-                    {
-                        float walk_solution;
-                        if(abs(hspeed) < crawlspeed) // no friction if extremely slow
-                            walk_solution = hspeed + taccel*direction;
-                        else // friction if we're extremely fast
-                            walk_solution = (hspeed + taccel*direction) * fric_moving;
-                        
-                        // If we're changing directions, we do either friction OR deacceleration; whichever one is stronger
-                        // this is the counter-friction
-                        auto fric_solution = hspeed * fric_counter; // same sign
-                        
-                        if(direction < 0) // prefer more negative
-                            hspeed = minimum(walk_solution, fric_solution);
-                        if(direction > 0) // more positive
-                            hspeed = maximum(walk_solution, fric_solution);
+                    float jumpspeed = -300;
+                    int jumping = (input.inputs[Input::JUMP] & !input.last_inputs[Input::JUMP]);
                             
-                        hsign = (0 < hspeed) - (hspeed < 0);
-                        
-                        if (abs(hspeed) > whichrunspeed and started_in_excess)
-                            hspeed = hsign * whichrunspeed;
-                    }
-                    else // did start in excess
-                    {
-                        if(place_meeting(character, 0, crop1(gravity))) // run friction if on ground
-                        {
-                            hspeed *= fric_overmoving;
-                        }
-                        if(abs(hspeed) < whichrunspeed and direction == hsign) // set speed to max if friction set us below our desired speed
-                            hspeed = whichrunspeed*hsign;
-                    }
-                    
-                    if (direction == 0)
-                    {
-                        hspeed *= fric_still;
-                        hspeed = absolute(hspeed) - fric_sticky;
-                        hspeed = hspeed > 0 ? hspeed : 0;
-                        hspeed *= hsign;
-                    }
-                    
-                    if(!place_meeting(character, 0, crop1(gravity)))
-                    {
-                        vspeed += gravity;
-                        if(vspeed > max_gravity)
-                            vspeed = max_gravity;
-                    }
                     if(jumping)
                         vspeed = jumpspeed;
-                    auto abv = fabs(vspeed);
-                    if(abv > fric_air_threshhold)
-                    {
-                        abv = (abv-fric_air_threshhold)*fric_air;
-                        vspeed = sign(vspeed)*(abv+fric_air_threshhold);
-                    }
+                    
+                    int stepsize = 4;
                     
                     /*
                      *  muh movement solving
@@ -288,7 +332,7 @@ namespace Sys
                         character->stand->flip = aiming_left;
                         character->run->flip = aiming_left;
                         
-                        auto running = (fabs(hspeed) > crawlspeed);
+                        auto running = (fabs(hspeed) > 1);
                         character->stand->visible = !running;
                         character->run->visible = running;
                         if(running)

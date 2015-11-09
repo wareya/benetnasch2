@@ -39,13 +39,13 @@ namespace Sys
             {
                 if (c->myself)
                 {
-                    renderText(0, 13*6,
+                    renderText(0, 13*7,
                                (std::string("x, y:   ")+std::to_string(c->position->x)+std::string(" ")+std::to_string(c->position->y)).data(),
                                Sys::afont);
                     break;
                 }
             }
-            renderText(0, 13*7,
+            renderText(0, 13*8,
                        (std::string("Delta:  ")+std::to_string(Physicsers::delta)).data(),
                        Sys::afont);
             std::string inputstr("");
@@ -53,7 +53,7 @@ namespace Sys
             {
                 for(short i = 0; i < Input::NUMBER_INPUTS; i++)
                     inputstr += std::to_string(myself->input.inputs[i]);
-                renderText(0, 13*8,
+                renderText(0, 13*9,
                            (std::string("Inputs: ")+inputstr).data(),
                            Sys::afont);
             }

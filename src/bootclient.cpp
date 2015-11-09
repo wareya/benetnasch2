@@ -88,6 +88,7 @@ bool main_init()
     sample::shot = fauxmix_sample_load("sounds/shot.wav");
     
     sample::emitter_ost = fauxmix_emitter_create(sample::ost);
+    fauxmix_emitter_volumes(sample::emitter_ost, 0.25, 0.25);
     fauxmix_emitter_loop(sample::emitter_ost, true);
     fauxmix_emitter_fire(sample::emitter_ost);
     
