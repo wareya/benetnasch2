@@ -27,8 +27,8 @@ it freely, subject to the following conditions:
     5. Non-substantial portions of the source code are explicitly
     exempt from the above restrictions.
     
-    6. The source code of this software may also be used under the
-    following licenses:
+    6. The source code of this software may alternatively be used
+    under either or both of the following licenses:
         - The GNU GPL 3.0 or newer, which can be acquired at the
         following web URL:  https://www.gnu.org/licenses/gpl-3.0.html
         - The Mozilla Public License 2.0, which can be acquired at
