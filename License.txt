@@ -21,5 +21,15 @@ it freely, subject to the following conditions:
         constitutes a source distribution.
         
     4. In case of use or inclusion of this software in a commercial
-    product, a proper acknowledgment of this software inside the final
-    product is required.
+    product, it is required to include a proper acknowledgment of
+    this software inside or alongside the product.
+    
+    5. Non-substantial portions of the source code are explicitly
+    exempt from the above restrictions.
+    
+    6. The source code of this software may also be used under the
+    following licenses:
+        - The GNU GPL 3.0 or newer, which can be acquired at the
+        following web URL:  https://www.gnu.org/licenses/gpl-3.0.html
+        - The Mozilla Public License 2.0, which can be acquired at
+        the following web URL: https://www.mozilla.org/en-US/MPL/2.0/
